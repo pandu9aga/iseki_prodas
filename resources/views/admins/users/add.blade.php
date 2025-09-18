@@ -28,18 +28,15 @@
                                 @csrf
                                 <div class="mb-3">
                                     <label for="Name_User" class="form-label">Name</label>
-                                    <input type="text" class="form-control" id="Name_User" name="Name_User" placeholder="Name"
-                                    />
+                                    <input type="text" class="form-control" id="Name_User" name="Name_User" placeholder="Name"/>
                                 </div>
                                 <div class="mb-3">
                                     <label for="Username_User" class="form-label">Username</label>
-                                    <input type="text" class="form-control" id="Username_User" name="Username_User" placeholder="Username"
-                                    />
+                                    <input type="text" class="form-control" id="Username_User" name="Username_User" placeholder="Username"/>
                                 </div>
                                 <div class="mb-3">
                                     <label for="Password_User" class="form-label">Password</label>
-                                    <input type="password" class="form-control" id="Password_User" name="Password_User" placeholder="Password"
-                                    />
+                                    <input type="password" class="form-control" id="Password_User" name="Password_User" placeholder="Password"/>
                                 </div>
                                 <div class="mb-3">
                                     <label for="Id_Type_User" class="form-label">Type</label>

@@ -8,7 +8,7 @@
                 <div class="d-flex align-items-end row">
                     <div class="col">
                         <div class="card-body">
-                            <h5 class="card-title text-primary mb-0">Add User</h5>
+                            <h5 class="card-title text-primary mb-0">Edit User</h5>
                         </div>
                     </div>
                 </div>

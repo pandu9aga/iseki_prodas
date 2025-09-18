@@ -51,11 +51,50 @@
                                                 <a href="{{ route('user.edit', $u->Id_User) }}" class="btn btn-sm btn-outline-primary">
                                                     <span class="tf-icons bx bx-edit"></span>
                                                 </a>
-                                                <a href="{{ route('user.destroy', $u->Id_User) }}" class="btn btn-sm btn-outline-danger">
+                                                <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#basicModal-{{ $u->Id_User }}">
                                                     <span class="tf-icons bx bx-trash"></span>
-                                                </a>
+                                                </button>
                                             </td>
                                         </tr>
+                                        <!-- Modal -->
+                                        <div class="modal fade" id="basicModal-{{ $u->Id_User }}" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog modal-dialog-centered" role="document">
+                                                <div class="modal-content">
+                                                    <div class="modal-header bg-danger">
+                                                        <h5 class="modal-title text-white" id="exampleModalLabel1">Delete User</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <div class="row">
+                                                            <div class="col mb-3">
+                                                                <label for="nameBasic" class="form-label">Name</label>
+                                                                <input type="text" id="nameBasic" class="form-control" value="{{ $u->Name_User }}" readonly/>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row g-2">
+                                                            <div class="col mb-0">
+                                                                <label for="usernameBasic" class="form-label">Username</label>
+                                                                <input type="text" id="usernameBasic" class="form-control" value="{{ $u->Username_User }}" readonly/>
+                                                            </div>
+                                                            <div class="col mb-0">
+                                                                <label for="typeBasic" class="form-label">Type User</label>
+                                                                <input type="text" id="typeBasic" class="form-control" value="{{ $type ? $type->Name_Type_User : 'Unknown' }}" readonly/>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                                                        Cancel
+                                                        </button>
+                                                        <form action="{{ route('user.destroy', $u->Id_User) }}" method="POST" style="display:inline;">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="btn btn-danger">Delete</button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                         @endforeach
                                     </tbody>
                                 </table>

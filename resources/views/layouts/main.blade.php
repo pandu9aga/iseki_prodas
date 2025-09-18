@@ -155,8 +155,8 @@
                 <div data-i18n="Documentation">Report</div>
               </a>
             </li>
-            <li class="menu-item {{ $page === 'planning' ? 'active' : '' }}">
-              <a href="javascript:void(0);" class="menu-link">
+            <li class="menu-item {{ $page === 'plan' ? 'active' : '' }}">
+              <a href="{{ route('plan') }}" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-table"></i>
                 <div data-i18n="Tables">Planning</div>
               </a>
@@ -315,8 +315,6 @@
     <script src="{{ asset('assets/js/main.js') }}"></script>
 
     <!-- Page JS -->
-    <script src="{{ asset('assets/js/dashboards-analytics.js') }}"></script>
-
     <!-- Place this tag in your head or just before your close body tag. -->
     {{-- <script async defer src="https://buttons.github.io/buttons.js"></script> --}}
     @yield('script')
