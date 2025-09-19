@@ -27,7 +27,7 @@
       content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"
     />
 
-    <title>Iseki Prodas | Production Database</title>
+    <title>Iseki Podium | Production Data & Information Unit Managemente</title>
 
     <meta name="description" content="" />
 
@@ -131,11 +131,11 @@
                       </g>
                     </svg>
                   </span>
-                  <span class="app-brand-text demo text-body fw-bolder">Iseki Prodas</span>
+                  <span class="app-brand-text demo text-body fw-bolder">Iseki Podium</span>
                 </a>
               </div>
               <!-- /Logo -->
-              <h4 class="mb-2">Welcome to Iseki Production Database Records! 👋</h4>
+              <h4 class="mb-2">Welcome to Iseki Production Data & Information Unit Management! 👋</h4>
               <p class="mb-4">Please log-in to your account</p>
 
                 @if ($errors->any())

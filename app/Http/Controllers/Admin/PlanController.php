@@ -44,44 +44,15 @@ class PlanController extends Controller
         return DataTables::of($query)
             ->addIndexColumn()
             ->addColumn('action', function ($row) {
-                $deleteModalId = "deleteModal-".$row->Id_Plan;
-
                 return '
-                    <a href="'.route('plan.edit', $row->Id_Plan).'" 
-                    class="btn btn-sm btn-outline-primary">
+                    <a href="'.route('plan.edit', $row->Id_Plan).'" class="btn btn-sm btn-outline-primary">
                         <span class="tf-icons bx bx-edit"></span>
                     </a>
-
-                    <!-- Delete Button -->
-                    <button type="button" 
-                            class="btn btn-sm btn-outline-danger" 
-                            data-bs-toggle="modal" 
-                            data-bs-target="#'.$deleteModalId.'">
+                    <button class="btn btn-sm btn-outline-danger delete-btn" 
+                            data-id="'.$row->Id_Plan.'" 
+                            data-name="'.$row->Sequence_No_Plan.'">
                         <span class="tf-icons bx bx-trash"></span>
                     </button>
-
-                    <!-- Delete Modal -->
-                    <div class="modal fade" id="'.$deleteModalId.'" tabindex="-1" aria-hidden="true">
-                        <div class="modal-dialog modal-dialog-centered">
-                            <div class="modal-content">
-                                <form action="'.route('plan.destroy', $row->Id_Plan).'" method="POST">
-                                    '.csrf_field().method_field('DELETE').'
-                                    <div class="modal-header bg-danger">
-                                        <h5 class="modal-title text-white">Delete Plan</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        Apakah kamu yakin ingin menghapus plan 
-                                        <strong>'.$row->Sequence_No_Plan.'</strong>?
-                                    </div>
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                                        <button type="submit" class="btn btn-danger">Delete</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
                 ';
             })
             ->rawColumns(['action'])
@@ -156,11 +127,12 @@ class PlanController extends Controller
         return redirect()->route('plan');
     }
 
-    public function destroy(Plan $Id_Plan)
+    public function destroy($Id_Plan) // jangan pakai Plan $Id_Plan, karena AJAX
     {
-        $Id_Plan->delete();
+        $plan = Plan::findOrFail($Id_Plan);
+        $plan->delete();
         
-        return redirect()->route('plan')->with('success','Data berhasil di hapus' );
+        return response()->json(['success' => true, 'message' => 'Data delete successfully']);
     }
 
     public function import(Request $request)
@@ -215,6 +187,6 @@ class PlanController extends Controller
             }
         }
 
-        return redirect()->back()->with('success', "Import selesai: $inserted data baru ditambahkan, $updated data diperbarui.");
+        return redirect()->back()->with('success', "Import done: $inserted new data inserted, $updated data updated.");
     }
 }

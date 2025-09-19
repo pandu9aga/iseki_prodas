@@ -114,8 +114,13 @@
 </div>
 @endsection
 
+@section('style')
+<link rel="stylesheet" href="{{ asset('assets/vendor/libs/apex-charts/apex-charts.min.css') }}" />
+@endsection
+
 @section('script')
 {{-- <script src="{{ asset('assets/js/dashboards-analytics.js') }}"></script> --}}
+<script src="{{ asset('assets/vendor/libs/apex-charts/apexcharts.min.js') }}"></script>
 <script>
     function updateDateTime() {
         let now = new Date();
@@ -142,7 +147,7 @@
     setInterval(updateDateTime, 1000);
 
     document.addEventListener("DOMContentLoaded", function () {
-        fetch("/iseki_prodas/public/api/api_dashboard")
+        fetch("/iseki_podium/public/api/api_dashboard")
             .then(res => res.json())
             .then(data => {
                 // update year & annualCount
@@ -224,7 +229,7 @@
     borderColor = config.colors.borderColor;
     
     document.addEventListener("DOMContentLoaded", function () {
-        fetch("/iseki_prodas/public/api/api_dashboard2")
+        fetch("/iseki_podium/public/api/api_dashboard2")
             .then(res => res.json())
             .then(data => {
                 const totalRevenueChartEl = document.querySelector('#totalRevenueChart');
@@ -240,12 +245,17 @@
                         bar: {
                             horizontal: false,
                             columnWidth: '20%',
-                            borderRadius: 12,
-                            // borderRadiusApplication: 'end', // 'around', 'end'
-                            // borderRadiusWhenStacked: 'last', // 'all', 'last'
-                            // startingShape: 'rounded',
-                            // endingShape: 'rounded',
-                        }
+                            borderRadius: 1,
+                            dataLabels: {
+                                total: {
+                                    enabled: true,
+                                    style: {
+                                        fontSize: '13px',
+                                        fontWeight: 900,
+                                    }
+                                }
+                            }
+                        },
                     },
                     colors: [
                         config.colors.primary,

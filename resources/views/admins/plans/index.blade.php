@@ -106,7 +106,7 @@ $(document).ready(function () {
         stateSave: false,
         pageLength: 50,
         ajax: {
-            url: '/iseki_prodas/public/api/plans-data',
+            url: '/iseki_podium/public/api/plans-data',
             type: 'GET',
             error: function (xhr, error, code) {
                 console.warn("DataTables AJAX Error:", error, code);
@@ -171,6 +171,39 @@ $(document).ready(function () {
 $(document).on('show.bs.modal', '.modal', function () {
     $(this).appendTo('body');
 });
+
+$(document).ready(function () {
+    // ... DataTables init seperti biasa ...
+
+    // Delegated event untuk tombol delete
+    $('#plansTable').on('click', '.delete-btn', function () {
+        var planId = $(this).data('id');
+        var planName = $(this).data('name');
+
+        if (confirm("Do you want to delete plan " + planName + "?")) {
+            $.ajax({
+                url: '/iseki_podium/public/plan/delete/' + planId,
+                type: 'POST',               // tetap POST
+                data: {
+                    _method: 'DELETE',      // Laravel akan menganggap ini DELETE
+                    _token: '{{ csrf_token() }}'
+                },
+                success: function(res) {
+                    if(res.success){
+                        $('#plansTable').DataTable().ajax.reload(null, false); // reload tanpa reset page
+                        alert(res.message);
+                    } else {
+                        alert('Failed to delete plan');
+                    }
+                },
+                error: function(xhr) {
+                    alert('Error: ' + xhr.statusText);
+                }
+            });
+        }
+    });
+});
+
 </script>
 
 @endsection
