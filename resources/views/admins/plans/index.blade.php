@@ -54,20 +54,20 @@
                                 <table id="plansTable" class="table table-bordered">
                                     <thead>
                                         <tr>
-                                            <th>No</th>
-                                            <th>Sequence No</th>
-                                            <th>Type</th>
-                                            <th>Production Date</th>
-                                            <th>Model Name</th>
-                                            <th>Production No</th>
-                                            <th>Chasis No</th>
-                                            <th>Model Label</th>
-                                            <th>Safety Frame Label</th>
-                                            <th>Model Mower</th>
-                                            <th>Mower No</th>
-                                            <th>Model Collector</th>
-                                            <th>Collector No</th>
-                                            <th>Action</th>
+                                            <th class="text-primary">No</th>
+                                            <th class="text-primary">Sequence No</th>
+                                            <th class="text-primary">Type</th>
+                                            <th class="text-primary">Production Date</th>
+                                            <th class="text-primary">Model Name</th>
+                                            <th class="text-primary">Production No</th>
+                                            <th class="text-primary">Chasis No</th>
+                                            <th class="text-primary">Model Label</th>
+                                            <th class="text-primary">Safety Frame Label</th>
+                                            <th class="text-primary">Model Mower</th>
+                                            <th class="text-primary">Mower No</th>
+                                            <th class="text-primary">Model Collector</th>
+                                            <th class="text-primary">Collector No</th>
+                                            <th class="text-primary">Action</th>
                                         </tr>
                                     </thead>
                                 </table>
@@ -99,12 +99,28 @@ $(document).ready(function () {
         .addClass('filters')
         .appendTo('#plansTable thead');
 
+    // Tambah plugin custom sorting
+    jQuery.extend(jQuery.fn.dataTable.ext.type.order, {
+        "seq-pre": function (d) {
+            // Ambil angka setelah huruf (contoh: T12 -> 12)
+            let num = d.replace(/^[^\d]*/, ""); 
+            return parseInt(num, 10) || 0;
+        },
+        "seq-asc": function (a, b) {
+            return a - b;
+        },
+        "seq-desc": function (a, b) {
+            return b - a;
+        }
+    });
+
     var table = $('#plansTable').DataTable({
         processing: true,
         serverSide: true,
         deferRender: true,
         stateSave: false,
         pageLength: 50,
+        order: [[1, 'asc']],
         ajax: {
             url: '/iseki_podium/public/api/plans-data',
             type: 'GET',

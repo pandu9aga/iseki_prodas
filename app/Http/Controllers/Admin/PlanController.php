@@ -19,8 +19,7 @@ class PlanController extends Controller
         $Id_User = session('Id_User');
         $user = User::find($Id_User);
 
-        $plans = Plan::orderBy('Sequence_No_Plan')->get();
-        return view('admins.plans.index', compact('page', 'user', 'plans'));
+        return view('admins.plans.index', compact('page', 'user'));
     }
 
     public function getPlans()
@@ -40,6 +39,7 @@ class PlanController extends Controller
             'Model_Collector_Plan',
             'Collector_No_Plan'
         ]);
+        // ->orderBy('Sequence_No_Plan', 'asc');
 
         return DataTables::of($query)
             ->addIndexColumn()

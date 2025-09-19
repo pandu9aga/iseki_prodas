@@ -42,7 +42,7 @@
                                                 <span class="text-secondary mb-0">{{ $type ? $type->Name_Type_User : 'Unknown' }}</span>
                                             </td>
                                             <td>
-                                                <span class="text-primary mb-0">{{ $u->Username_User }}</span>
+                                                <span class="text-secondary mb-0">{{ $u->Username_User }}</span>
                                             </td>
                                             <td>
                                                 <span class="text-secondary mb-0">{{ $u->Name_User }}</span>
