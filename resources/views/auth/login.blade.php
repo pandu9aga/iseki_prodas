@@ -27,7 +27,7 @@
       content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"
     />
 
-    <title>Iseki Podium | Production Data & Information Unit Managemente</title>
+    <title>Iseki Podium | Pokayoke Digital Unit Monitoring</title>
 
     <meta name="description" content="" />
 
@@ -135,7 +135,7 @@
                 </a>
               </div>
               <!-- /Logo -->
-              <h4 class="mb-2">Welcome to Iseki Production Data & Information Unit Management! 👋</h4>
+              <h4 class="mb-2">Welcome to Iseki Pokayoke Digital Unit Monitoring! 👋</h4>
               <p class="mb-4">Please log-in to your account</p>
 
                 @if ($errors->any())

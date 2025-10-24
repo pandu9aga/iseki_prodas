@@ -7,6 +7,7 @@ use App\Http\Controllers\MainController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\PlanController;
+use App\Http\Controllers\Admin\RuleController;
 
 Route::get('/', [MainController::class, 'index'])->name('/');
 Route::get('/login', [MainController::class, 'index'])->name('login');
@@ -30,5 +31,12 @@ Route::middleware(AdminMiddleware::class)->group(function () {
     Route::put('/plan/update/{Id_Plan}', [PlanController::class, 'update'])->name('plan.update');
     Route::delete('/plan/delete/{Id_Plan}', [PlanController::class, 'destroy'])->name('plan.destroy');
     Route::post('/plan/import', [PlanController::class, 'import'])->name('plan.import');
+
+    Route::get('/rule', [RuleController::class, 'index'])->name('rule');
+    Route::get('/rule/add', [RuleController::class, 'add'])->name('rule.add');
+    Route::post('/rule/create', [RuleController::class, 'create'])->name('rule.create');
+    Route::get('/rule/edit/{Id_User}', [RuleController::class, 'edit'])->name('rule.edit');
+    Route::put('/rule/update/{Id_User}', [RuleController::class, 'update'])->name('rule.update');
+    Route::delete('/rule/delete/{Id_User}', [RuleController::class, 'destroy'])->name('rule.destroy');
 
 });

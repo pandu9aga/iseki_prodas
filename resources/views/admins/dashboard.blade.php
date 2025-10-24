@@ -115,7 +115,7 @@
 @endsection
 
 @section('style')
-<link rel="stylesheet" href="{{ asset('assets/vendor/libs/apex-charts/apex-charts.min.css') }}" />
+<link rel="stylesheet" href="{{ asset('assets/vendor/libs/apex-charts/apexcharts.min.css') }}" />
 @endsection
 
 @section('script')

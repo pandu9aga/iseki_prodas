@@ -27,7 +27,7 @@
       content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"
     />
 
-    <title>Iseki Podium | Production Data & Information Unit Management</title>
+    <title>Iseki Podium | Pokayoke Digital Unit Monitoring</title>
 
     <meta name="description" content="" />
 
@@ -159,6 +159,12 @@
                 <div data-i18n="Tables">Planning</div>
               </a>
             </li>
+            <li class="menu-item {{ $page === 'rule' ? 'active' : '' }}">
+              <a href="{{ route('rule') }}" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-lock-open-alt"></i>
+                <div data-i18n="Authentications">Rule</div>
+              </a>
+            </li>
             <li class="menu-item {{ $page === 'user' ? 'active' : '' }}">
               <a href="{{ route('user') }}" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-dock-top"></i>
@@ -187,7 +193,7 @@
               <!-- Search -->
               <div class="navbar-nav align-items-center">
                 <div class="nav-item d-flex align-items-center">
-                    <h5 class="text-primary mb-0">Production Database</h5>
+                    <h5 class="text-primary mb-0">Pokayoke Digital</h5>
                   {{-- <i class="bx bx-search fs-4 lh-0"></i>
                   <input
                     type="text"
