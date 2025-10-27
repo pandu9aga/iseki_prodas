@@ -62,12 +62,9 @@
 @endsection
 
 @section('style')
-<link href="{{asset('assets/css/datatables.min.css')}}" rel="stylesheet">
+
 @endsection
 
 @section('script')
-<script src="{{asset('assets/js/datatables.min.js')}}"></script>
-<script>
-new DataTable('#example');
-</script>
+
 @endsection

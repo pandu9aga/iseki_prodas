@@ -35,8 +35,9 @@ Route::middleware(AdminMiddleware::class)->group(function () {
     Route::get('/rule', [RuleController::class, 'index'])->name('rule');
     Route::get('/rule/add', [RuleController::class, 'add'])->name('rule.add');
     Route::post('/rule/create', [RuleController::class, 'create'])->name('rule.create');
-    Route::get('/rule/edit/{Id_User}', [RuleController::class, 'edit'])->name('rule.edit');
-    Route::put('/rule/update/{Id_User}', [RuleController::class, 'update'])->name('rule.update');
-    Route::delete('/rule/delete/{Id_User}', [RuleController::class, 'destroy'])->name('rule.destroy');
+    Route::get('/rule/edit/{Id_Rule}', [RuleController::class, 'edit'])->name('rule.edit');
+    Route::put('/rule/update/{Id_Rule}', [RuleController::class, 'update'])->name('rule.update');
+    Route::delete('/rule/delete/{Id_Rule}', [RuleController::class, 'destroy'])->name('rule.destroy');
+    Route::post('/rule/import', [RuleController::class, 'import'])->name('rule.import');
 
 });
