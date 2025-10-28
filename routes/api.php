@@ -10,6 +10,7 @@ Route::get('/api_dashboard', [AdminController::class, 'dashboard']);
 Route::get('/api_dashboard2', [AdminController::class, 'dashboard2']);
 
 Route::get('/plans-data', [PlanController::class, 'getPlans'])->name('plans.data');
+Route::post('/record-process-by-sequence', [PlanController::class, 'recordProcessBySequence']);
 
 Route::get('/rules-data', [RuleController::class, 'getRules'])->name('rules.data');
 

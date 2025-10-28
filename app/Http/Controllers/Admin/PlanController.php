@@ -9,6 +9,7 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 use Carbon\Carbon;
 use App\Models\User;
 use App\Models\Plan;
+use App\Models\Rule;
 use Yajra\DataTables\Facades\DataTables;
 
 class PlanController extends Controller
@@ -188,5 +189,120 @@ class PlanController extends Controller
         }
 
         return redirect()->back()->with('success', "Import done: $inserted new data inserted, $updated data updated.");
+    }
+
+    public function recordProcessBySequence(Request $request)
+    {
+        $request->validate([
+            'sequence_no' => 'required|string',
+            'process_name' => 'required|string',
+            // timestamp dihapus dari request
+        ]);
+
+        $sequenceNo = $request->input('sequence_no');
+        $processName = $request->input('process_name');
+        $timestamp = Carbon::now()->format('Y-m-d H:i:s'); // ✅ pakai waktu sekarang
+
+        // --- PERUBAHAN: Format sequence_no ---
+        // Format $sequenceNo yang diterima dari request ke 5 digit dengan leading zero
+        // Misal: "6731" -> "06731", "1" -> "00001", "12345" -> "12345"
+        $formattedSequenceNo = str_pad($sequenceNo, 5, '0', STR_PAD_LEFT);
+
+        // 1. Cari plan berdasarkan Sequence_No_Plan (dengan format yang disesuaikan)
+        $plan = DB::connection('mysql')->table('plans')->where('Sequence_No_Plan', $formattedSequenceNo)->first();
+        if (!$plan) {
+            return response()->json([
+                'success' => false,
+                'message' => "Plan dengan Sequence_No_Plan '{$formattedSequenceNo}' tidak ditemukan."
+            ], 404);
+        }
+
+        $modelName = $plan->Model_Name_Plan;
+
+        // 2. Cari rule berdasarkan Type_Rule = Model_Name_Plan
+        $rule = DB::connection('mysql')->table('rules')->where('Type_Rule', $modelName)->first();
+        if (!$rule) {
+            return response()->json([
+                'success' => false,
+                'message' => "Rule untuk model '{$modelName}' tidak ditemukan."
+            ], 400);
+        }
+
+        // 3. Decode Rule_Rule
+        try {
+            $ruleSequence = json_decode($rule->Rule_Rule, true, 512, JSON_THROW_ON_ERROR);
+            if (!is_array($ruleSequence)) {
+                throw new \Exception('Invalid rule format');
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => "Format rule untuk model '{$modelName}' rusak."
+            ], 500);
+        }
+
+        // 4. Cek apakah process_name ada dalam rule
+        $position = null;
+        foreach ($ruleSequence as $key => $process) {
+            if ($process === $processName) {
+                $position = (int)$key;
+                break;
+            }
+        }
+
+        if ($position === null) {
+            return response()->json([
+                'success' => false,
+                'message' => "Proses '{$processName}' tidak termasuk dalam rule untuk model '{$modelName}'."
+            ], 400);
+        }
+
+        // 5. Decode Record_Plan
+        $record = [];
+        if ($plan->Record_Plan) {
+            try {
+                $record = json_decode($plan->Record_Plan, true, 512, JSON_THROW_ON_ERROR);
+                if (!is_array($record)) $record = [];
+            } catch (\Exception $e) {
+                $record = [];
+            }
+        }
+
+        // 6. Cek apakah proses sebelumnya sudah dilakukan
+        $previousProcessesDone = true;
+        $missingPrevious = [];
+
+        for ($i = 1; $i < $position; $i++) {
+            $prevProcess = $ruleSequence[$i] ?? null;
+            if ($prevProcess && !isset($record[$prevProcess])) {
+                $previousProcessesDone = false;
+                $missingPrevious[] = $prevProcess;
+            }
+        }
+
+        if (!$previousProcessesDone) {
+            return response()->json([
+                'success' => false,
+                'message' => "Proses sebelumnya belum selesai: " . implode(', ', $missingPrevious)
+            ], 400);
+        }
+
+        // 7. Update record
+        $record[$processName] = $timestamp;
+
+        // 8. Simpan kembali
+        DB::connection('mysql')->table('plans')
+            ->where('Id_Plan', $plan->Id_Plan)
+            ->update(['Record_Plan' => json_encode($record, JSON_UNESCAPED_UNICODE)]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Proses '{$processName}' berhasil dicatat untuk plan '{$formattedSequenceNo}'.",
+            'data' => [
+                'sequence_no' => $formattedSequenceNo, // Kirim kembali yang sudah diformat
+                'process' => $processName,
+                'timestamp' => $timestamp
+            ]
+        ]);
     }
 }

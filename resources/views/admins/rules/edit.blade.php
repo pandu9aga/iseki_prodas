@@ -42,17 +42,18 @@
                                 <div class="mb-3">
                                     <label class="form-label">Pilih Rule (opsional)</label><br>
                                     @php
-                                        $savedRules = json_decode($Id_Rule->Rule_Rule, true) ?: [];
+                                        // Karena casting 'array', $Id_Rule->Rule_Rule sudah berupa array
+                                        $savedRules = $Id_Rule->Rule_Rule ?: [];
                                         $savedValues = array_values($savedRules); // hanya nilai, bukan key
                                     @endphp
 
-                                    @foreach(['chadet', 'parcom_ring_synchronizer', 'astra_engine', 'astra_main_line_start', 'astra_main_line_end', 'astra_mower_collector'] as $option)
+                                    @foreach(['parcom_ring_synchronizer', 'chadet', 'astra_engine', 'astra_main_line_start', 'astra_main_line_end', 'astra_mower_collector'] as $option)
                                         <div class="form-check">
                                             <input class="form-check-input rule-checkbox" 
-                                                   type="checkbox" 
-                                                   value="{{ $option }}" 
-                                                   id="{{ $option }}"
-                                                   {{ in_array($option, $savedValues) ? 'checked' : '' }}>
+                                                type="checkbox" 
+                                                value="{{ $option }}" 
+                                                id="{{ $option }}"
+                                                {{ in_array($option, $savedValues) ? 'checked' : '' }}>
                                             <label class="form-check-label" for="{{ $option }}">{{ $option }}</label>
                                         </div>
                                     @endforeach
@@ -66,7 +67,7 @@
                                             // Urutkan berdasarkan key: "1", "2", dst
                                             ksort($savedRules, SORT_NUMERIC);
                                         @endphp
-                                        @foreach($savedRules as $value)
+                                        @foreach($savedRules as $key => $value) <!-- Perhatikan: kita iterasi key dan value -->
                                             <li class="list-group-item" data-value="{{ $value }}" style="cursor: move;">
                                                 {{ $value }}
                                             </li>

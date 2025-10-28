@@ -9,6 +9,7 @@ use Illuminate\Validation\ValidationException;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use App\Models\User;
 use App\Models\Rule;
+use Yajra\DataTables\Facades\DataTables;
 
 class RuleController extends Controller
 {
@@ -27,7 +28,7 @@ class RuleController extends Controller
         $query = Rule::select([
             'Id_Rule',
             'Type_Rule',
-            'Rule_Rule',
+            'Rule_Rule', // ini sekarang array karena casting
         ]);
 
         return DataTables::of($query)
@@ -44,7 +45,11 @@ class RuleController extends Controller
                     </button>
                 ';
             })
-            ->rawColumns(['action'])
+            ->editColumn('Rule_Rule', function ($row) {
+                // Karena Rule_Rule adalah array, encode ke JSON string
+                return json_encode($row->Rule_Rule ?? []);
+            })
+            ->rawColumns(['action', 'Rule_Rule']) // ✅ izinkan HTML di Rule_Rule (nanti di-render sebagai list)
             ->make(true);
     }
 

@@ -19,6 +19,11 @@ class Rule extends Model
         'Rule_Rule'
     ];
 
+    // ✅ Casting kolom Rule_Rule sebagai array
+    protected $casts = [
+        'Rule_Rule' => 'array', // Laravel otomatis encode/decode JSON
+    ];
+
     // public function user()
     // {
     //     return $this->belongsTo(User::class, 'Id_User', 'Id_User');
