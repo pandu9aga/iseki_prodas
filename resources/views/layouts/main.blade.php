@@ -144,31 +144,48 @@
             <li class="menu-item {{ $page === 'dashboard' ? 'active' : '' }}">
               <a href="{{ route('dashboard') }}" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-home-circle"></i>
-                <div data-i18n="Analytics">Dashboard</div>
+                <div data-i18n="Dashboard">Dashboard</div>
               </a>
             </li>
-            <li class="menu-item {{ $page === 'report' ? 'active' : '' }}">
-              <a href="javascript:void(0);" class="menu-link">
+            <li class="menu-item open {{ (isset($page) && $page === 'report') ? 'active' : '' }}"> <!-- Ganti open active -->
+              <a href="javascript:void(0);" class="menu-link menu-toggle">
                 <i class="menu-icon tf-icons bx bx-file"></i>
-                <div data-i18n="Documentation">Report</div>
+                <div data-i18n="Report">Report</div>
               </a>
+              <ul class="menu-sub">
+                <li class="menu-item {{ (isset($sub) && $sub === 'lineoff') ? 'active' : '' }}">
+                  <a href="{{ route('report.lineoff') }}" class="menu-link"> <!-- Ganti dengan route kamu -->
+                    <div data-i18n="Lineoff">Lineoff</div>
+                  </a>
+                </li>
+                <li class="menu-item {{ (isset($sub) && $sub === 'filter') ? 'active' : '' }}">
+                  <a href="{{ route('report.filter') }}" class="menu-link"> <!-- Ganti dengan route kamu -->
+                    <div data-i18n="Filter">Filter</div>
+                  </a>
+                </li>
+                <li class="menu-item {{ (isset($sub) && $sub === 'missing') ? 'active' : '' }}">
+                  <a href="#" class="menu-link"> <!-- Ganti dengan route kamu -->
+                    <div data-i18n="Missing">Missing</div>
+                  </a>
+                </li>
+              </ul>
             </li>
             <li class="menu-item {{ $page === 'plan' ? 'active' : '' }}">
               <a href="{{ route('plan') }}" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-table"></i>
-                <div data-i18n="Tables">Planning</div>
+                <div data-i18n="Planning">Planning</div>
               </a>
             </li>
             <li class="menu-item {{ $page === 'rule' ? 'active' : '' }}">
               <a href="{{ route('rule') }}" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-lock-open-alt"></i>
-                <div data-i18n="Authentications">Rule</div>
+                <div data-i18n="Rule">Rule</div>
               </a>
             </li>
             <li class="menu-item {{ $page === 'user' ? 'active' : '' }}">
               <a href="{{ route('user') }}" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-dock-top"></i>
-                <div data-i18n="Account Settings">User</div>
+                <div data-i18n="User">User</div>
               </a>
             </li>
           </ul>
@@ -193,7 +210,7 @@
               <!-- Search -->
               <div class="navbar-nav align-items-center">
                 <div class="nav-item d-flex align-items-center">
-                    <h5 class="text-primary mb-0">Pokayoke Digital</h5>
+                    <h5 class="text-primary mb-0">Digital Pokayoke</h5>
                   {{-- <i class="bx bx-search fs-4 lh-0"></i>
                   <input
                     type="text"

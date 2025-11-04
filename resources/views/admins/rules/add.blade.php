@@ -58,6 +58,10 @@
                                         <input class="form-check-input rule-checkbox" type="checkbox" value="astra_mower_collector" id="astra_mower_collector">
                                         <label class="form-check-label" for="astra_mower_collector">astra_mower_collector</label>
                                     </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input rule-checkbox" type="checkbox" value="oiler" id="oiler">
+                                        <label class="form-check-label" for="oiler">oiler</label>
+                                    </div>
                                 </div>
 
                                 <!-- Area urutan (hanya untuk yang dipilih) -->

@@ -27,7 +27,9 @@ class Plan extends Model
         'Model_Mower_Plan',
         'Mower_No_Plan',
         'Model_Collector_Plan',
-        'Collector_No_Plan'
+        'Collector_No_Plan',
+        'Record_Plan',
+        'Lineoff_Plan'
     ];
 
     // public function user()

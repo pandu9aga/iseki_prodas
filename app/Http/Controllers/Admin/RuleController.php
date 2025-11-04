@@ -78,7 +78,15 @@ class RuleController extends Controller
         $ruleRule = $request->input('Rule_Rule'); // ini string JSON
 
         // Opsional: Validasi isi JSON (pastikan hanya nilai yang diizinkan)
-        $allowedValues = ['chadet', 'parcom_ring_synchronizer', 'astra_engine', 'astra_main_line_start', 'astra_main_line_end', 'astra_mower_collector'];
+        $allowedValues = [
+            'chadet',
+            'parcom_ring_synchronizer',
+            'astra_engine',
+            'astra_main_line_start',
+            'astra_main_line_end',
+            'astra_mower_collector',
+            'oiler'
+        ];
 
         if ($ruleRule) {
             $decoded = json_decode($ruleRule, true);
@@ -148,7 +156,8 @@ class RuleController extends Controller
             'astra_engine',
             'astra_main_line_start',
             'astra_main_line_end',
-            'astra_mower_collector'
+            'astra_mower_collector',
+            'oiler'
         ];
 
         // Proses Rule_Rule
@@ -223,13 +232,14 @@ class RuleController extends Controller
         ]);
 
         // Daftar rule yang diizinkan (sesuaikan dengan kebutuhan)
-        $allowedRules = [
+        $allowedValues = [
             'chadet',
+            'parcom_ring_synchronizer',
             'astra_engine',
             'astra_main_line_start',
             'astra_main_line_end',
             'astra_mower_collector',
-            'parcom_ring_synchronizer',
+            'oiler'
         ];
 
         try {

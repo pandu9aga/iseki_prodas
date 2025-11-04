@@ -67,6 +67,61 @@
   <body>
     <!-- Content -->
 
+    <nav
+      class="layout-navbar container-xxl navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme"
+      id="layout-navbar">
+
+      <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
+        <!-- Search -->
+        <div class="navbar-nav align-items-center">
+          <div class="nav-item d-flex align-items-center">
+              <h5 class="text-primary mb-0">Digital Pokayoke</h5>
+          </div>
+        </div>
+
+        <!-- Tombol-tombol di pojok kanan hanya muncul di layar XL dan besar -->
+        <ul class="navbar-nav flex-row align-items-center ms-auto d-none d-xl-flex">
+          <li class="nav-item">
+            <a class="nav-link" href="{{ route('scan') }}"> <!-- Ganti dengan route kamu -->
+              <button class="btn btn-outline-secondary me-2">
+                Scan
+              </button>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ route('lineoff') }}"> <!-- Ganti dengan route kamu -->
+              <button class="btn btn-outline-secondary me-2">
+                Lineoff
+              </button>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ route('login') }}"> <!-- Ganti dengan route kamu -->
+              <button class="btn btn-outline-primary">
+                Login
+              </button>
+            </a>
+          </li>
+        </ul>
+
+        <!-- Dropdown menu di pojok kanan hanya muncul di layar kecil -->
+        <ul class="navbar-nav flex-row align-items-center ms-auto d-xl-none">
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown">
+              <i class="bx bx-dots-vertical-rounded bx-sm"></i> <!-- Ikon titik tiga -->
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="{{ route('scan') }}"><i class="bx bx-qr me-2"></i> Scan</a></li>
+              <li><a class="dropdown-item" href="{{ route('lineoff') }}"><i class="bx bx-stop-circle me-2"></i> Lineoff</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="{{ route('login') }}"><i class="bx bx-log-in me-2"></i> Login</a></li>
+            </ul>
+          </li>
+        </ul>
+
+      </div>
+    </nav>
+
     <div class="container-xxl">
       <div class="authentication-wrapper authentication-basic container-p-y">
         <div class="authentication-inner">

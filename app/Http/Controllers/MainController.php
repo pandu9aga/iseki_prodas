@@ -4,8 +4,11 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 use App\Models\User;
 use App\Models\Type_User;
+use App\Models\Plan;
+use Yajra\DataTables\Facades\DataTables;
 
 class MainController extends Controller
 {
@@ -90,5 +93,73 @@ class MainController extends Controller
         ]);
         
         return redirect()->route('login');
+    }
+
+    public function scan(){
+        return view('lineoff.scan');
+    }
+
+    public function scanStore(Request $request)
+    {
+        $request->validate([
+            'sequence_no' => 'required|string|max:255',
+        ]);
+
+        $sequenceNo = $request->input('sequence_no');
+
+        // Format sequence_no ke 5 digit dengan leading zero (jika belum oleh JS)
+        $sequenceNoFormatted = str_pad($sequenceNo, 5, '0', STR_PAD_LEFT);
+
+        $timestampNow = Carbon::now();
+
+        try {
+            // Update kolom Lineoff_Plan di tabel plans
+            $updatedRows = DB::table('plans')
+                ->where('Sequence_No_Plan', $sequenceNoFormatted)
+                ->update([
+                    'Lineoff_Plan' => $timestampNow
+                ]);
+
+            if ($updatedRows > 0) {
+                return redirect()->back()->with('success', "Data Lineoff untuk Sequence No {$sequenceNoFormatted} berhasil diperbarui.");
+            } else {
+                return redirect()->back()->withErrors(['sequence_no' => "Plan dengan Sequence_No_Plan '{$sequenceNoFormatted}' tidak ditemukan."]);
+            }
+
+        } catch (\Exception $e) {
+            // Log error jika perlu
+            // \Log::error('Gagal update Lineoff_Plan: ' . $e->getMessage());
+            return redirect()->back()->withErrors(['general' => 'Gagal memperbarui data Lineoff: ' . $e->getMessage()]);
+        }
+    }
+
+    public function lineoff(){
+        return view('lineoff.list');
+    }
+
+    public function getLineoffs()
+    {
+        $query = Plan::select([
+            'Id_Plan',
+            'Type_Plan',
+            'Sequence_No_Plan',
+            'Production_Date_Plan',
+            'Model_Name_Plan',
+            'Production_No_Plan',
+            'Chasis_No_Plan',
+            'Model_Label_Plan',
+            'Safety_Frame_Label_Plan',
+            'Model_Mower_Plan',
+            'Mower_No_Plan',
+            'Model_Collector_Plan',
+            'Collector_No_Plan',
+            'Lineoff_Plan'
+        ])
+        ->whereNotNull('Lineoff_Plan')
+        ->orderBy('Lineoff_Plan', 'desc');
+
+        return DataTables::of($query)
+            ->addIndexColumn()
+            ->make(true);
     }
 }
