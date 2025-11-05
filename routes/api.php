@@ -20,3 +20,4 @@ Route::get('/rules-data', [RuleController::class, 'getRules'])->name('rules.data
 
 Route::get('/report/lineoffs-data', [ReportController::class, 'getLineoffs'])->name('report.lineoffs.data');
 Route::get('/report/filters-data', [ReportController::class, 'getFilters'])->name('report.filters.data');
+Route::get('/report/missings-data', [ReportController::class, 'getMissings'])->name('report.missings.data');

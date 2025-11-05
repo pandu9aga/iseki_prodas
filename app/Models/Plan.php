@@ -29,7 +29,8 @@ class Plan extends Model
         'Model_Collector_Plan',
         'Collector_No_Plan',
         'Record_Plan',
-        'Lineoff_Plan'
+        'Lineoff_Plan',
+        'Status_Plan'
     ];
 
     // public function user()

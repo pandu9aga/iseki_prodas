@@ -113,23 +113,98 @@ class MainController extends Controller
         $timestampNow = Carbon::now();
 
         try {
-            // Update kolom Lineoff_Plan di tabel plans
+            // 1. Update kolom Lineoff_Plan di tabel plans
             $updatedRows = DB::table('plans')
                 ->where('Sequence_No_Plan', $sequenceNoFormatted)
                 ->update([
                     'Lineoff_Plan' => $timestampNow
                 ]);
 
-            if ($updatedRows > 0) {
-                return redirect()->back()->with('success', "Data Lineoff untuk Sequence No {$sequenceNoFormatted} berhasil diperbarui.");
-            } else {
+            if ($updatedRows === 0) {
                 return redirect()->back()->withErrors(['sequence_no' => "Plan dengan Sequence_No_Plan '{$sequenceNoFormatted}' tidak ditemukan."]);
             }
 
+            // 2. Ambil plan yang baru diupdate untuk pengecekan status
+            $plan = DB::table('plans')
+                ->where('Sequence_No_Plan', $sequenceNoFormatted)
+                ->first();
+
+            if (!$plan) {
+                // Harusnya tidak terjadi jika update berhasil, tapi jaga-jaga
+                return redirect()->back()->withErrors(['general' => 'Terjadi kesalahan internal.']);
+            }
+
+            // 3. Ambil Model_Name_Plan untuk mencari rule
+            $modelName = $plan->Model_Name_Plan;
+
+            // 4. Ambil rule berdasarkan Type_Rule (Model_Name_Plan)
+            $rule = DB::table('rules')
+                ->where('Type_Rule', $modelName)
+                ->first();
+
+            if (!$rule) {
+                // Jika rule tidak ditemukan, tidak bisa menentukan status, biarkan kosong atau isi pesan error jika diperlukan
+                // Di sini, kita asumsikan status tetap kosong jika rule tidak ada
+                return redirect()->back()->with('success', "Data Lineoff untuk Sequence No {$sequenceNoFormatted} berhasil diperbarui, tetapi rule tidak ditemukan untuk menentukan status.");
+            }
+
+            // 5. Decode Rule_Rule dan Record_Plan
+            $ruleSequenceRaw = $rule->Rule_Rule; // String JSON
+            $recordPlanRaw = $plan->Record_Plan;  // String JSON
+
+            $ruleSequence = null;
+            $recordPlan = [];
+
+            // Decode Rule_Rule
+            if (is_string($ruleSequenceRaw) && !empty($ruleSequenceRaw)) {
+                $decodedRule = json_decode($ruleSequenceRaw, true);
+                if (is_array($decodedRule)) {
+                    $ruleSequence = $decodedRule;
+                } else {
+                    return redirect()->back()->withErrors(['general' => 'Format rule untuk model ini rusak.']);
+                }
+            } else {
+                // Jika rule kosong, kita asumsikan tidak ada proses, jadi statusnya 'done' atau 'not_applicable'
+                // Di sini kita anggap 'done' karena tidak ada yang harus diselesaikan
+                DB::table('plans')
+                    ->where('Sequence_No_Plan', $sequenceNoFormatted)
+                    ->update(['Status_Plan' => 'done']);
+                return redirect()->back()->with('success', "Data Lineoff untuk Sequence No {$sequenceNoFormatted} berhasil diperbarui. Status Plan: Done (Tidak ada rule).");
+            }
+
+            // Decode Record_Plan
+            if (is_string($recordPlanRaw) && !empty($recordPlanRaw)) {
+                $decodedRecord = json_decode($recordPlanRaw, true);
+                if (is_array($decodedRecord)) {
+                    $recordPlan = $decodedRecord;
+                } else {
+                    return redirect()->back()->withErrors(['general' => 'Format record plan untuk plan ini rusak.']);
+                }
+            } // Jika recordPlanRaw kosong/null, biarkan $recordPlan sebagai array kosong []
+
+            // 6. Cek apakah semua proses dalam rule sudah ada di recordPlan
+            $allProcessesCompleted = true;
+            foreach ($ruleSequence as $processName) {
+                if (!isset($recordPlan[$processName])) {
+                    $allProcessesCompleted = false;
+                    break; // Cukup satu yang belum selesai, langsung berhenti
+                }
+            }
+
+            // 7. Tentukan status dan update kolom Status_Plan
+            $newStatus = $allProcessesCompleted ? 'done' : 'pending'; // Atau status lain sesuai kebutuhan
+
+            DB::table('plans')
+                ->where('Sequence_No_Plan', $sequenceNoFormatted)
+                ->update(['Status_Plan' => $newStatus]);
+
+            $statusMessage = $allProcessesCompleted ? " dan Status Plan: Done." : " dan Status Plan: Pending.";
+
+            // Redirect ke route 'lineoff' setelah sukses
+            return redirect()->route('lineoff')->with('success', "Data Lineoff untuk Sequence No {$sequenceNoFormatted} berhasil diperbarui." . $statusMessage);
+
         } catch (\Exception $e) {
-            // Log error jika perlu
-            // \Log::error('Gagal update Lineoff_Plan: ' . $e->getMessage());
-            return redirect()->back()->withErrors(['general' => 'Gagal memperbarui data Lineoff: ' . $e->getMessage()]);
+            return redirect()->back()->withErrors(['general' => 'Gagal memperbarui data Lineoff dan Status: ' . $e->getMessage()]);
         }
     }
 

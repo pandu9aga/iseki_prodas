@@ -46,4 +46,6 @@ Route::middleware(AdminMiddleware::class)->group(function () {
 
     Route::get('/report/lineoff', [ReportController::class, 'lineoff'])->name('report.lineoff');
     Route::get('/report/filter', [ReportController::class, 'filter'])->name('report.filter');
+    Route::get('/report/missing', [ReportController::class, 'missing'])->name('report.missing');
+    Route::get('/report/missing/export', [ReportController::class, 'missingExport'])->name('report.missing.export');
 });

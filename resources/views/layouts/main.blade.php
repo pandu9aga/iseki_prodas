@@ -164,7 +164,7 @@
                   </a>
                 </li>
                 <li class="menu-item {{ (isset($sub) && $sub === 'missing') ? 'active' : '' }}">
-                  <a href="#" class="menu-link"> <!-- Ganti dengan route kamu -->
+                  <a href="{{ route('report.missing') }}" class="menu-link"> <!-- Ganti dengan route kamu -->
                     <div data-i18n="Missing">Missing</div>
                   </a>
                 </li>
