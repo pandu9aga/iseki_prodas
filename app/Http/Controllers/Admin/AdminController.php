@@ -114,40 +114,24 @@ class AdminController extends Controller
 
     public function dashboard3()
     {
-        $today = Carbon::today();
-        $year = $today->format('Y');
+        $today = Carbon::today(); // Mewakili 00:00:00 pada hari ini
+        $todayFormatted = $today->format('Y-m-d'); // Format tanggal: YYYY-MM-DD
 
-        // Ambil data per hari (YYYYMMDD) + Type_Plan
-        $plans = DB::table('plans')
-            ->select(
-                'Production_Date_Plan as ymd', // sudah string YYYYMMDD
-                'Type_Plan',
-                DB::raw('COUNT(*) as total')
-            )
-            ->where('Production_Date_Plan', 'like', $year . '%')
-            ->groupBy('ymd', 'Type_Plan')
-            ->orderBy('ymd')
-            ->get();
+        $todayLineoffCount = DB::table('plans')
+            ->whereDate('Lineoff_Plan', $todayFormatted) // <-- Perubahan di sini
+            ->count();
 
-        // Ambil semua tanggal
-        $dates = $plans->pluck('ymd')->unique()->values();
-        $types = $plans->pluck('Type_Plan')->unique()->values();
-
-        // Format series untuk chart (tiap type = 1 series)
-        $series = $types->map(function ($type) use ($plans, $dates) {
-            return [
-                'name' => $type,
-                'data' => $dates->map(function ($ymd) use ($plans, $type) {
-                    $record = $plans->firstWhere(fn($p) => $p->ymd == $ymd && $p->Type_Plan == $type);
-                    // kembalikan dalam format [timestamp, total]
-                    $carbon = Carbon::createFromFormat('Ymd', $ymd);
-                    return [$carbon->timestamp * 1000, $record ? $record->total : 0];
-                }),
-            ];
-        });
+        $missingUnitCount = DB::table('plans')
+            ->whereNotNull('Lineoff_Plan')
+            ->where('Status_Plan', '!=', 'done')
+            ->count();
 
         return response()->json([
-            'series' => $series,
+            'success' => true,
+            'data' => [
+                'today_lineoff' => $todayLineoffCount,
+                'missing_unit' => $missingUnitCount,
+            ]
         ]);
     }
 }

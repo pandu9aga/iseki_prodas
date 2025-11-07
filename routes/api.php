@@ -12,6 +12,7 @@ Route::get('/lineoffs-data', [MainController::class, 'getLineoffs'])->name('line
 
 Route::get('/api_dashboard', [AdminController::class, 'dashboard']);
 Route::get('/api_dashboard2', [AdminController::class, 'dashboard2']);
+Route::get('/api_dashboard3', [AdminController::class, 'dashboard3']);
 
 Route::get('/plans-data', [PlanController::class, 'getPlans'])->name('plans.data');
 Route::post('/record-process-by-sequence', [PlanController::class, 'recordProcessBySequence']);

@@ -7,15 +7,33 @@
             <div class="row mb-4">
                 <div class="card">
                     <div class="d-flex align-items-end row">
-                        <div class="col-sm-7">
+                        <div class="col">
                             <div class="card-body">
                                 <h5 class="card-title">Welcome <span class="text-primary">{{ $user->Name_User }}</span>!</h5>
-                                <span class="fw-semibold d-block mb-1" id="hari-ini"></span>
+                                <span class="text-warning fw-semibold d-block mb-1" id="hari-ini"></span>
                                 <h3 class="card-title mb-2" id="tanggal-hari-ini"></h3>
-                                <span class="text-success fw-semibold">
+                                <span class="text-info fw-semibold">
                                     <i class="bx bx-time"></i> 
                                     <span id="jam-menit-detik"></span>
                                 </span>
+                                <div class="row mt-4">
+                                    <div class="col-md-4">
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <h5 class="card-title" id="lineoff">Today Lineoff:</h5>
+                                                <h1 class="text-success mb-0">0</h1>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <h5 class="card-title" id="missing">Missing Unit:</h5>
+                                                <h1 class="text-danger mb-0">0</h1>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -146,6 +164,13 @@
     // Update tiap detik
     setInterval(updateDateTime, 1000);
 
+    let cardColor, headingColor, axisColor, shadeColor, borderColor;
+
+    cardColor = config.colors.white;
+    headingColor = config.colors.headingColor;
+    axisColor = config.colors.axisColor;
+    borderColor = config.colors.borderColor;
+
     document.addEventListener("DOMContentLoaded", function () {
         fetch("/iseki_podium/public/api/api_dashboard")
             .then(res => res.json())
@@ -219,16 +244,7 @@
                 }
             })
             .catch(err => console.error("Error loading dashboard data:", err));
-    });
-
-    let cardColor, headingColor, axisColor, shadeColor, borderColor;
-
-    cardColor = config.colors.white;
-    headingColor = config.colors.headingColor;
-    axisColor = config.colors.axisColor;
-    borderColor = config.colors.borderColor;
-    
-    document.addEventListener("DOMContentLoaded", function () {
+        
         fetch("/iseki_podium/public/api/api_dashboard2")
             .then(res => res.json())
             .then(data => {
@@ -299,6 +315,24 @@
                 }
             })
             .catch(err => console.error("Error loading plans data:", err));
+
+        fetch("/iseki_podium/public/api/api_dashboard3")
+            .then(response => response.json())
+            .then(apiData => {
+                if (apiData.success) {
+                    document.querySelector('#lineoff ~ h1').textContent = apiData.data.today_lineoff;
+                    document.querySelector('#missing ~ h1').textContent = apiData.data.missing_unit;
+                } else {
+                    console.error("API dashboard-numbers mengembalikan success: false:", apiData.message);
+                    document.querySelector('#lineoff ~ h1').textContent = 'Err';
+                    document.querySelector('#missing ~ h1').textContent = 'Err';
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching dashboard numbers:', error);
+                document.querySelector('#lineoff ~ h1').textContent = 'Err';
+                document.querySelector('#missing ~ h1').textContent = 'Err';
+            });
     });
 </script>
 @endsection

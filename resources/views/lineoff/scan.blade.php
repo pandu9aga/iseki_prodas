@@ -133,18 +133,19 @@
               <form action="{{ route('scan.store') }}" method="POST"> {{-- Ganti dengan route kamu --}}
                   @csrf
                   <div>
-                    <label for="sequence_no" class="form-label">Sequence Number</label>
+                    <label for="sequence_no_input" class="form-label">Sequence Number</label> <!-- Tambahkan ID ke label dan sesuaikan 'for' -->
                     <div class="row">
                       <div class="col-md-10">
                         <input
                           type="text"
                           class="form-control mt-2"
-                          id="sequence_no"
+                          id="sequence_no_input" {{-- Tambahkan ID ini --}}
                           name="sequence_no"
                           placeholder="Sequence Number"
                           aria-describedby="defaultFormControlHelp"
                           required
-                          readonly {{-- Input akan diisi oleh JS --}}
+                           {{-- Input akan diisi oleh JS --}}
+                          autofocus {{-- Tambahkan ini agar input langsung fokus saat halaman dimuat --}}
                         />
                       </div>
                       <div class="col-md-2">
@@ -153,7 +154,7 @@
                         </button>
                       </div>
                     </div>
-                    <div id="qr-reader" style="margin-top:15px; display: none;"></div> {{-- Area untuk QR scanner --}}
+                    <div id="qr-reader" style="margin-top:15px; display: none;"></div>
                     <div id="defaultFormControlHelp" class="form-text">
                       Gunakan tombol scan jika ingin memindai menggunakan kamera device.
                     </div>
@@ -203,59 +204,117 @@
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const scanButton = document.getElementById('scanButton');
-            const sequenceInput = document.getElementById('sequence_no');
-            const qrReaderElement = document.getElementById('qr-reader'); // Ambil elemen dari HTML
+            const sequenceInput = document.getElementById('sequence_no_input');
+            const qrReaderElement = document.getElementById('qr-reader');
 
             let html5QrcodeScanner;
 
+            // --- TAMBAHAN: Event listener untuk input sequence_no ---
+            sequenceInput.addEventListener('keypress', function (e) {
+                // Scanner biasanya menekan tombol 'Enter' setelah selesai mengetik
+                if (e.key === 'Enter') {
+                    e.preventDefault(); // Cegah submit form default
+
+                    let currentValue = this.value.trim();
+
+                    if (currentValue) {
+                        // Cek apakah currentValue mengandung ';' (kemungkinan besar dari scanner USB)
+                        if (currentValue.includes(';')) {
+                            let parts = currentValue.split(';');
+                            if (parts.length > 0) {
+                                let sequenceNoFromScanner = parts[0].trim();
+
+                                // Format ke 5 digit dengan leading zero
+                                let formattedSequenceNo = sequenceNoFromScanner.padStart(5, '0');
+
+                                // Hanya ganti nilai input jika berbeda dari nilai yang sudah diformat
+                                // Ini mencegah penggantian nilai jika input sudah diformat oleh onScanSuccess
+                                if (this.value !== formattedSequenceNo) {
+                                    this.value = formattedSequenceNo;
+                                }
+
+                                // Logika validasi atau submit bisa ditambahkan di sini
+                                // Misalnya, fokus ke tombol submit
+                                // document.querySelector('button[type="submit"]').focus();
+                                // Atau panggil fungsi validasi
+                                // validateRuleOnServer(formattedSequenceNo);
+                            } else {
+                                alert('Format QR Code tidak valid (tidak ada bagian yang dipisahkan oleh ;).');
+                                this.value = ''; // Kosongkan jika tidak valid
+                                this.focus(); // Fokus kembali ke input
+                            }
+                        } else {
+                            // Jika tidak mengandung ';', asumsikan nilainya sudah diformat oleh onScanSuccess
+                            // atau dimasukkan manual dengan benar. Biarkan saja.
+                            // Kita bisa menambahkan validasi format 5 digit di sini jika perlu.
+                            // Contoh: Cek apakah hanya angka dan panjangnya 5
+                            const sequenceNoRegex = /^\d{5}$/;
+                            if (!sequenceNoRegex.test(currentValue)) {
+                                alert('Sequence number harus berupa 5 digit angka.');
+                                this.value = '';
+                                this.focus();
+                                return; // Hentikan eksekusi jika format salah
+                            }
+                            // Jika format benar, lanjutkan ke validasi atau submit
+                            // validateRuleOnServer(currentValue);
+                        }
+                    } else {
+                        // Jika input kosong saat Enter ditekan, kosongkan lagi dan fokus
+                        this.value = '';
+                        this.focus();
+                    }
+                }
+            });
+
+            // Tombol Scan QR (sama seperti sebelumnya)
             scanButton.addEventListener('click', function () {
+                sequenceInput.readOnly = !!html5QrcodeScanner;
+
                 if (html5QrcodeScanner) {
-                    // Jika scanner sudah aktif, hentikan dulu
                     html5QrcodeScanner.clear().then(() => {
                         html5QrcodeScanner = null;
-                        qrReaderElement.style.display = 'none'; // Sembunyikan area scanner
+                        qrReaderElement.style.display = 'none';
+                        sequenceInput.focus();
                     }).catch(console.error);
                     return;
                 }
 
-                // Tampilkan area scanner
                 qrReaderElement.style.display = 'block';
 
-                // Ganti qrReaderElement dengan string ID 'qr-reader'
                 html5QrcodeScanner = new Html5QrcodeScanner(
-                    'qr-reader', { // Gunakan string ID
-                        fps: 10, // Sedikit lebih cepat
-                        qrbox: {
-                            width: 300, // Lebih besar
-                            height: 300
-                        },
+                    'qr-reader', {
+                        fps: 10,
+                        qrbox: { width: 300, height: 300 },
                     }
                 );
 
                 function onScanSuccess(decodedText, decodedResult) {
-                    // Pindai sukses, proses string QR
                     const parts = decodedText.split(';');
                     if (parts.length > 0) {
-                        let sequenceNumber = parts[0].trim(); // Ambil indeks pertama
+                        let sequenceNumber = parts[0].trim();
                         // Format ke 5 digit dengan leading zero
                         sequenceNumber = sequenceNumber.padStart(5, '0');
                         sequenceInput.value = sequenceNumber;
+                        // Setelah scan, fokus kembali ke input agar siap menerima input berikutnya (jika perlu)
+                        sequenceInput.focus();
                     } else {
                         alert('Format QR Code tidak valid.');
                     }
 
-                    // Hentikan scanner setelah sukses
                     html5QrcodeScanner.clear().then(() => {
                         html5QrcodeScanner = null;
-                        qrReaderElement.style.display = 'none'; // Sembunyikan area scanner
+                        qrReaderElement.style.display = 'none';
+                        sequenceInput.focus();
                     }).catch(console.error);
                 }
 
                 html5QrcodeScanner.render(onScanSuccess, function(errorMessage) {
-                    // Handle error jika diperlukan
-                    //console.error('QR Code scan error:', errorMessage);
+                    console.warn("QR Code scan error:", errorMessage);
                 });
             });
+
+            // Pastikan input difokuskan saat halaman dimuat (sudah ada di HTML)
+            // sequenceInput.focus(); // Ini seharusnya otomatis karena autofocus di HTML
         });
     </script>
   </body>
