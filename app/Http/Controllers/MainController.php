@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use App\Models\User;
 use App\Models\Type_User;
@@ -12,15 +13,66 @@ use Yajra\DataTables\Facades\DataTables;
 
 class MainController extends Controller
 {
-    public function index(){
-        if (session()->has('Id_User')) {
-            if (session('Id_Type_User') == 2){
+    // public function index(){
+    //     if (session()->has('Id_User')) {
+    //         if (session('Id_Type_User') == 2){
+    //             return redirect()->route('dashboard');
+    //         }
+    //         else if (session('Id_Type_User') == 1){
+    //             return redirect()->route('home');
+    //         }
+    //     }
+    //     return view('auth.login');
+    // }
+
+    // public function login(Request $request)
+    // {
+    //     $request->validate([
+    //         'Username_User' => 'required',
+    //         'Password_User' => 'required'
+    //     ]);
+
+    //     $user = User::where('Username_User', $request->Username_User)->first();
+
+    //     if (!$user) {
+    //         return back()->withErrors(['loginError' => 'Invalid username or password']);
+    //     }
+
+    //     if ($request->Password_User == $user->Password_User) {
+    //         session(['Id_User' => $user->Id_User]);
+    //         session(['Id_Type_User' => $user->Id_Type_User]);
+    //         session(['Username_User' => $user->Username_User]);
+    //         if (session('Id_Type_User') == 2){
+    //             return redirect()->route('dashboard');
+    //         }
+    //         else if (session('Id_Type_User') == 1){
+    //             return redirect()->route('home');
+    //         }
+    //     }
+
+    //     return back()->withErrors(['loginError' => 'Invalid username or password']);
+    // }
+
+    // public function logout()
+    // {
+    //     session()->forget('Id_User');
+    //     session()->forget('Id_Type_User');
+    //     session()->forget('Username_User');
+    //     return redirect()->route('/');
+    // }
+
+    public function index()
+    {
+        if (Auth::check()) {
+            $user = Auth::user();
+
+            if ($user->Id_Type_User == 2) {
                 return redirect()->route('dashboard');
-            }
-            else if (session('Id_Type_User') == 1){
+            } elseif ($user->Id_Type_User == 1) {
                 return redirect()->route('home');
             }
         }
+
         return view('auth.login');
     }
 
@@ -31,20 +83,20 @@ class MainController extends Controller
             'Password_User' => 'required'
         ]);
 
+        // Cari user berdasarkan username
         $user = User::where('Username_User', $request->Username_User)->first();
 
-        if (!$user) {
-            return back()->withErrors(['loginError' => 'Invalid username or password']);
-        }
+        // Verifikasi password (plain text, karena kamu tidak pakai hashing)
+        if ($user && $request->Password_User === $user->Password_User) {
+            Auth::login($user); // ✅ Ini yang membuat Laravel tahu kamu login
 
-        if ($request->Password_User == $user->Password_User) {
             session(['Id_User' => $user->Id_User]);
             session(['Id_Type_User' => $user->Id_Type_User]);
             session(['Username_User' => $user->Username_User]);
-            if (session('Id_Type_User') == 2){
+
+            if ($user->Id_Type_User == 2) {
                 return redirect()->route('dashboard');
-            }
-            else if (session('Id_Type_User') == 1){
+            } else if ($user->Id_Type_User == 1) {
                 return redirect()->route('home');
             }
         }
@@ -54,9 +106,12 @@ class MainController extends Controller
 
     public function logout()
     {
+        Auth::logout();
+
         session()->forget('Id_User');
         session()->forget('Id_Type_User');
         session()->forget('Username_User');
+        
         return redirect()->route('/');
     }
 
