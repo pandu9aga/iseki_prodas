@@ -43,6 +43,14 @@
                                         <label class="form-check-label" for="parcom_ring_synchronizer">parcom_ring_synchronizer</label>
                                     </div>
                                     <div class="form-check">
+                                        <input class="form-check-input rule-checkbox" type="checkbox" value="parcom_bearing_koyo" id="parcom_bearing_koyo">
+                                        <label class="form-check-label" for="parcom_bearing_koyo">parcom_bearing_koyo</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input rule-checkbox" type="checkbox" value="parcom_bearing_kbc" id="parcom_bearing_kbc">
+                                        <label class="form-check-label" for="parcom_bearing_kbc">parcom_bearing_kbc</label>
+                                    </div>
+                                    <div class="form-check">
                                         <input class="form-check-input rule-checkbox" type="checkbox" value="astra_engine" id="astra_engine">
                                         <label class="form-check-label" for="astra_engine">astra_engine</label>
                                     </div>
@@ -57,6 +65,10 @@
                                     <div class="form-check">
                                         <input class="form-check-input rule-checkbox" type="checkbox" value="astra_mower_collector" id="astra_mower_collector">
                                         <label class="form-check-label" for="astra_mower_collector">astra_mower_collector</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input rule-checkbox" type="checkbox" value="astra_mower_collector_end" id="astra_mower_collector_end">
+                                        <label class="form-check-label" for="astra_mower_collector_end">astra_mower_collector_end</label>
                                     </div>
                                     <div class="form-check">
                                         <input class="form-check-input rule-checkbox" type="checkbox" value="oiler" id="oiler">

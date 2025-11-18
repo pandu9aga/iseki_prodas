@@ -81,10 +81,13 @@ class RuleController extends Controller
         $allowedValues = [
             'chadet',
             'parcom_ring_synchronizer',
+            'parcom_bearing_koyo',
+            'parcom_bearing_kbc',
             'astra_engine',
             'astra_main_line_start',
             'astra_main_line_end',
             'astra_mower_collector',
+            'astra_mower_collector_end',
             'oiler'
         ];
 
@@ -153,10 +156,13 @@ class RuleController extends Controller
         $allowedValues = [
             'chadet',
             'parcom_ring_synchronizer',
+            'parcom_bearing_koyo',
+            'parcom_bearing_kbc',
             'astra_engine',
             'astra_main_line_start',
             'astra_main_line_end',
             'astra_mower_collector',
+            'astra_mower_collector_end',
             'oiler'
         ];
 
@@ -232,13 +238,16 @@ class RuleController extends Controller
         ]);
 
         // Daftar rule yang diizinkan (sesuaikan dengan kebutuhan)
-        $allowedRules = [
+        $allowedValues = [
             'chadet',
             'parcom_ring_synchronizer',
+            'parcom_bearing_koyo',
+            'parcom_bearing_kbc',
             'astra_engine',
             'astra_main_line_start',
             'astra_main_line_end',
             'astra_mower_collector',
+            'astra_mower_collector_end',
             'oiler'
         ];
 

@@ -47,7 +47,18 @@
                                         $savedValues = array_values($savedRules); // hanya nilai, bukan key
                                     @endphp
 
-                                    @foreach(['parcom_ring_synchronizer', 'chadet', 'astra_engine', 'astra_main_line_start', 'astra_main_line_end', 'astra_mower_collector', 'oiler'] as $option)
+                                    @foreach([
+                                        'chadet',
+                                        'parcom_ring_synchronizer',
+                                        'parcom_bearing_koyo',
+                                        'parcom_bearing_kbc',
+                                        'astra_engine',
+                                        'astra_main_line_start',
+                                        'astra_main_line_end',
+                                        'astra_mower_collector',
+                                        'astra_mower_collector_end',
+                                        'oiler'
+                                    ] as $option)
                                         <div class="form-check">
                                             <input class="form-check-input rule-checkbox" 
                                                 type="checkbox" 

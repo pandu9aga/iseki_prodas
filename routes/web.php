@@ -19,7 +19,7 @@ Route::post('/scan', [MainController::class, 'scanStore'])->name('scan.store');
 Route::get('/lineoff', [MainController::class, 'lineoff'])->name('lineoff');
 
 // Route::middleware(AdminMiddleware::class)->group(function () {
-Route::middleware('auth')->group(function () {
+// Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [AdminController::class, 'index'])->name('dashboard');
 
     Route::get('/user', [UserController::class, 'index'])->name('user');
@@ -49,7 +49,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/report/filter', [ReportController::class, 'filter'])->name('report.filter');
     Route::get('/report/missing', [ReportController::class, 'missing'])->name('report.missing');
     Route::get('/report/missing/export', [ReportController::class, 'missingExport'])->name('report.missing.export');
-});
+// });
 
 Route::get('/debug-auth', function () {
     return [
