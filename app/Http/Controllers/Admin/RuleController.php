@@ -238,7 +238,7 @@ class RuleController extends Controller
         ]);
 
         // Daftar rule yang diizinkan (sesuaikan dengan kebutuhan)
-        $allowedValues = [
+        $allowedRules = [
             'chadet',
             'parcom_ring_synchronizer',
             'parcom_bearing_koyo',
