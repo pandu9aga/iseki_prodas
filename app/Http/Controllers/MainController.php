@@ -158,9 +158,11 @@ class MainController extends Controller
     {
         $request->validate([
             'sequence_no' => 'required|string|max:255',
+            'production_date' => 'required',
         ]);
 
         $sequenceNo = $request->input('sequence_no');
+        $productionDate = $request->input('production_date');
 
         // Format sequence_no ke 5 digit dengan leading zero (jika belum oleh JS)
         $sequenceNoFormatted = str_pad($sequenceNo, 5, '0', STR_PAD_LEFT);
@@ -171,6 +173,7 @@ class MainController extends Controller
             // 1. Update kolom Lineoff_Plan di tabel plans
             $updatedRows = DB::table('plans')
                 ->where('Sequence_No_Plan', $sequenceNoFormatted)
+                ->where('Production_Date_Plan', $productionDate)
                 ->update([
                     'Lineoff_Plan' => $timestampNow
                 ]);
@@ -182,6 +185,7 @@ class MainController extends Controller
             // 2. Ambil plan yang baru diupdate untuk pengecekan status
             $plan = DB::table('plans')
                 ->where('Sequence_No_Plan', $sequenceNoFormatted)
+                ->where('Production_Date_Plan', $productionDate)
                 ->first();
 
             if (!$plan) {
@@ -223,6 +227,7 @@ class MainController extends Controller
                 // Di sini kita anggap 'done' karena tidak ada yang harus diselesaikan
                 DB::table('plans')
                     ->where('Sequence_No_Plan', $sequenceNoFormatted)
+                    ->where('Production_Date_Plan', $productionDate)
                     ->update(['Status_Plan' => 'done']);
                 return redirect()->back()->with('success', "Data Lineoff untuk Sequence No {$sequenceNoFormatted} berhasil diperbarui. Status Plan: Done (Tidak ada rule).");
             }
@@ -251,6 +256,7 @@ class MainController extends Controller
 
             DB::table('plans')
                 ->where('Sequence_No_Plan', $sequenceNoFormatted)
+                ->where('Production_Date_Plan', $productionDate)
                 ->update(['Status_Plan' => $newStatus]);
 
             $statusMessage = $allProcessesCompleted ? " dan Status Plan: Done." : " dan Status Plan: Pending.";

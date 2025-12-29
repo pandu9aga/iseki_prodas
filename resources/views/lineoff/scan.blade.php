@@ -147,6 +147,11 @@
                            {{-- Input akan diisi oleh JS --}}
                           autofocus {{-- Tambahkan ini agar input langsung fokus saat halaman dimuat --}}
                         />
+                        <input
+                          type="hidden"
+                          id="production_date_input" {{-- Tambahkan ID ini --}}
+                          name="production_date"
+                        />
                       </div>
                       <div class="col-md-2">
                         <button type="button" id="scanButton" class="btn btn-outline-secondary mt-2">
@@ -205,6 +210,7 @@
         document.addEventListener('DOMContentLoaded', function () {
             const scanButton = document.getElementById('scanButton');
             const sequenceInput = document.getElementById('sequence_no_input');
+            const productionDateInput = document.getElementById('production_date_input');
             const qrReaderElement = document.getElementById('qr-reader');
 
             let html5QrcodeScanner;
@@ -223,6 +229,7 @@
                             let parts = currentValue.split(';');
                             if (parts.length > 0) {
                                 let sequenceNoFromScanner = parts[0].trim();
+                                let productionDateFromScanner = parts[1].trim();
 
                                 // Format ke 5 digit dengan leading zero
                                 let formattedSequenceNo = sequenceNoFromScanner.padStart(5, '0');
@@ -232,6 +239,8 @@
                                 if (this.value !== formattedSequenceNo) {
                                     this.value = formattedSequenceNo;
                                 }
+
+                                productionDateInput.value = productionDateFromScanner;
 
                                 // Logika validasi atau submit bisa ditambahkan di sini
                                 // Misalnya, fokus ke tombol submit
@@ -292,9 +301,11 @@
                     const parts = decodedText.split(';');
                     if (parts.length > 0) {
                         let sequenceNumber = parts[0].trim();
+                        let productionDate = parts[1].trim();
                         // Format ke 5 digit dengan leading zero
                         sequenceNumber = sequenceNumber.padStart(5, '0');
                         sequenceInput.value = sequenceNumber;
+                        productionDateInput.value = productionDate;
                         // Setelah scan, fokus kembali ke input agar siap menerima input berikutnya (jika perlu)
                         sequenceInput.focus();
                     } else {

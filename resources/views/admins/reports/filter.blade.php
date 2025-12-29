@@ -16,7 +16,7 @@
 
             {{-- 🔘 Filter di atas tabel --}}
             <div class="row mb-3">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label">Tipe Data</label>
                     <div class="form-check form-check-inline">
                         <input class="form-check-input type-switch" type="radio" name="dataType" id="unit" value="unit" checked>
@@ -28,7 +28,14 @@
                     </div>
                 </div>
 
-                <div class="col-md-4">
+                <div class="col-md-3">
+                    <label for="filterTahun" class="form-label">Filter Tahun</label>
+                    <select class="form-select form-select-sm" id="filterTahun">
+                        <!-- Opsi tahun akan diisi oleh JavaScript -->
+                    </select>
+                </div>
+
+                <div class="col-md-6">
                     <label class="form-label">Filter Nomor (Min - Max)</label>
                     <div class="input-group">
                         <input type="text" id="minNumber" class="form-control form-control-sm" placeholder="Min">
@@ -87,6 +94,23 @@
 
 <script>
 $(document).ready(function () {
+    // Ambil tahun saat ini
+    const currentYear = new Date().getFullYear();
+    // Tentukan rentang tahun (misalnya, 10 tahun ke belakang dari sekarang)
+    const startYear = 2025;
+    const endYear = currentYear + 1; // Opsional: tambahkan beberapa tahun ke depan
+
+    // Isi dropdown filter tahun
+    const filterTahunSelect = $('#filterTahun');
+    let optionsHtml = ''; // Gunakan string HTML untuk membangun opsi secara efisien
+
+    for (let year = endYear; year >= startYear; year--) {
+        const isSelected = year === currentYear ? ' selected' : ''; // Tambahkan atribut 'selected' jika tahun saat ini
+        optionsHtml += `<option value="${year}"${isSelected}>${year}</option>`; // Gunakan template literal
+    }
+
+    filterTahunSelect.html(optionsHtml); // Masukkan semua opsi sekaligus ke dalam select
+
     // 🔹 Clone header untuk filter kolom
     var headerOriginal = $('#plansTable thead tr').first();
     var headerClone = headerOriginal.clone();
@@ -110,6 +134,9 @@ $(document).ready(function () {
                 d.type = $('input[name="dataType"]:checked').val(); // unit / nonunit
                 d.min = $('#minNumber').val();
                 d.max = $('#maxNumber').val();
+                // --- TAMBAHAN: Kirim parameter tahun ---
+                d.tahun = $('#filterTahun').val(); // Ambil nilai dari select
+                // --- AKHIR TAMBAHAN ---
             },
         },
         scrollX: true,
@@ -154,6 +181,13 @@ $(document).ready(function () {
     $('#applyRange').on('click', function () {
         table.ajax.reload();
     });
+
+    // --- TAMBAHAN: Event handler untuk perubahan filter tahun (select) ---
+    $('#filterTahun').on('change', function() {
+        // Reload DataTables ketika nilai tahun berubah
+        table.ajax.reload(null, false); // false untuk tidak mereset paging
+    });
+    // --- AKHIR TAMBAHAN ---
 });
 </script>
 @endsection

@@ -23,7 +23,7 @@ class PlanController extends Controller
         return view('admins.plans.index', compact('page', 'user'));
     }
 
-    public function getPlans()
+    public function getPlans(Request $request) // Tambahkan $request
     {
         $query = Plan::select([
             'Id_Plan',
@@ -40,7 +40,25 @@ class PlanController extends Controller
             'Model_Collector_Plan',
             'Collector_No_Plan'
         ]);
-        // ->orderBy('Sequence_No_Plan', 'asc');
+
+        // --- TAMBAHAN: Filter berdasarkan tahun ---
+        $tahun = $request->input('tahun'); // Ambil dari request DataTables
+        if ($tahun) {
+            // Konversi tahun ke format yang sesuai untuk pencocokan di database
+            // Kita ingin mencocokkan Production_Date_Plan yang tahunnya sesuai
+            // Misalnya, jika $tahun = 2025, kita cari Production_Date_Plan antara 20250101 dan 20251231
+            $startOfYear = (int)($tahun . '0101'); // 20250101
+            $endOfYear = (int)($tahun . '1231');   // 20251231
+
+            $query->whereBetween('Production_Date_Plan', [$startOfYear, $endOfYear]);
+        } else {
+            // Jika tidak ada filter tahun, gunakan tahun saat ini sebagai default
+            $currentYear = Carbon::now()->year;
+            $startOfYear = (int)($currentYear . '0101');
+            $endOfYear = (int)($currentYear . '1231');
+            $query->whereBetween('Production_Date_Plan', [$startOfYear, $endOfYear]);
+        }
+        // --- AKHIR TAMBAHAN ---
 
         return DataTables::of($query)
             ->addIndexColumn()
@@ -49,8 +67,8 @@ class PlanController extends Controller
                     <a href="'.route('plan.edit', $row->Id_Plan).'" class="btn btn-sm btn-outline-primary">
                         <span class="tf-icons bx bx-edit"></span>
                     </a>
-                    <button class="btn btn-sm btn-outline-danger delete-btn" 
-                            data-id="'.$row->Id_Plan.'" 
+                    <button class="btn btn-sm btn-outline-danger delete-btn"
+                            data-id="'.$row->Id_Plan.'"
                             data-name="'.$row->Sequence_No_Plan.'">
                         <span class="tf-icons bx bx-trash"></span>
                     </button>
@@ -157,6 +175,7 @@ class PlanController extends Controller
         foreach (array_slice($rows, 1) as $row) {
             if (count($row) >= 12) {
                 $sequenceNo = trim($row[1]); // kolom Sequence_No_Plan
+                $productionDate = trim($row[2]); // kolom Production_Date_Plan
 
                 $data = [
                     'Type_Plan'               => $row[0] ?? null,
@@ -175,10 +194,16 @@ class PlanController extends Controller
 
                 if (!empty($sequenceNo)) {
                     // cek apakah sequenceNo sudah ada
-                    $exists = DB::table('plans')->where('Sequence_No_Plan', $sequenceNo)->first();
+                    $exists = DB::table('plans')
+                                    ->where('Sequence_No_Plan', $sequenceNo)
+                                    ->where('Production_Date_Plan', $productionDate)
+                                    ->first();
 
                     if ($exists) {
-                        DB::table('plans')->where('Sequence_No_Plan', $sequenceNo)->update($data);
+                        DB::table('plans')
+                                ->where('Sequence_No_Plan', $sequenceNo)
+                                ->where('Production_Date_Plan', $productionDate)
+                                ->update($data);
                         $updated++;
                     } else {
                         DB::table('plans')->insert($data);

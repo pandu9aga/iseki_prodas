@@ -108,32 +108,43 @@ class ReportController extends Controller
         $type = $request->input('type', 'unit'); // default: unit
         $min = $request->input('min');
         $max = $request->input('max');
+        // --- TAMBAHAN: Ambil parameter tahun ---
+        $tahun = $request->input('tahun'); // Ambil dari request DataTables
 
         $query = Plan::select([
-            'Id_Plan',
-            'Type_Plan',
-            'Sequence_No_Plan',
-            'Production_Date_Plan',
-            'Model_Name_Plan',
-            'Production_No_Plan',
-            'Chasis_No_Plan',
-            'Model_Label_Plan',
-            'Safety_Frame_Label_Plan',
-            'Model_Mower_Plan',
-            'Mower_No_Plan',
-            'Model_Collector_Plan',
-            'Collector_No_Plan',
-            'Lineoff_Plan',
-            'Record_Plan'
-        ])
-        ->when($type === 'unit', function ($q) {
-            // Hanya data tanpa huruf T/t
-            $q->where('Sequence_No_Plan', 'NOT REGEXP', '^[Tt]');
-        })
-        ->when($type === 'nonunit', function ($q) {
-            // Hanya data yang diawali huruf T/t
-            $q->where('Sequence_No_Plan', 'REGEXP', '^[Tt]');
-        });
+                'Id_Plan',
+                'Type_Plan',
+                'Sequence_No_Plan',
+                'Production_Date_Plan',
+                'Model_Name_Plan',
+                'Production_No_Plan',
+                'Chasis_No_Plan',
+                'Model_Label_Plan',
+                'Safety_Frame_Label_Plan',
+                'Model_Mower_Plan',
+                'Mower_No_Plan',
+                'Model_Collector_Plan',
+                'Collector_No_Plan',
+                'Lineoff_Plan',
+                'Record_Plan'
+            ])
+            ->when($type === 'unit', function ($q) {
+                // Hanya data tanpa huruf T/t
+                $q->where('Sequence_No_Plan', 'NOT REGEXP', '^[Tt]');
+            })
+            ->when($type === 'nonunit', function ($q) {
+                // Hanya data yang diawali huruf T/t
+                $q->where('Sequence_No_Plan', 'REGEXP', '^[Tt]');
+            });
+
+        // --- TAMBAHAN: Filter berdasarkan tahun ---
+        if ($tahun) {
+            // Konversi tahun ke format yang sesuai untuk pencocokan di database
+            $startOfYear = (int)($tahun . '0101'); // 20250101
+            $endOfYear = (int)($tahun . '1231');   // 20251231
+            $query->whereBetween('Production_Date_Plan', [$startOfYear, $endOfYear]);
+        }
+        // --- AKHIR TAMBAHAN ---
 
         // ✅ Filter berdasarkan range
         if ($min && $max) {
