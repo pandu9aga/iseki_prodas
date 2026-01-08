@@ -99,6 +99,13 @@
             </a>
           </li>
           <li class="nav-item">
+            <a class="nav-link" href="{{ route('report') }}"> <!-- Ganti dengan route kamu -->
+              <button class="btn btn-outline-secondary me-2">
+                Report
+              </button>
+            </a>
+          </li>
+          <li class="nav-item">
             <a class="nav-link" href="{{ route('login') }}"> <!-- Ganti dengan route kamu -->
               <button class="btn btn-outline-primary">
                 Login
@@ -116,6 +123,7 @@
             <ul class="dropdown-menu dropdown-menu-end">
               <li><a class="dropdown-item" href="{{ route('scan') }}"><i class="bx bx-qr me-2"></i> Scan</a></li>
               <li><a class="dropdown-item" href="{{ route('lineoff') }}"><i class="bx bx-stop-circle me-2"></i> Lineoff</a></li>
+              <li><a class="dropdown-item" href="{{ route('report') }}"><i class="bx bx-file me-2"></i> Report</a></li>
               <li><hr class="dropdown-divider"></li>
               <li><a class="dropdown-item" href="{{ route('login') }}"><i class="bx bx-log-in me-2"></i> Login</a></li>
             </ul>

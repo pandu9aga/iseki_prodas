@@ -17,8 +17,11 @@ Route::get('/logout', [MainController::class, 'logout'])->name('logout');
 Route::get('/scan', [MainController::class, 'scan'])->name('scan');
 Route::post('/scan', [MainController::class, 'scanStore'])->name('scan.store');
 Route::get('/lineoff', [MainController::class, 'lineoff'])->name('lineoff');
+Route::get('/report', [MainController::class, 'report'])->name('report');
+Route::get('/report/export', [MainController::class, 'exportReport'])->name('report.export');
+Route::get('/api/reports-data', [MainController::class, 'getReports'])->name('api.reports.data');
 
-// Route::middleware(AdminMiddleware::class)->group(function () {
+Route::middleware(AdminMiddleware::class)->group(function () {
 // Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [AdminController::class, 'index'])->name('dashboard');
 
@@ -49,7 +52,7 @@ Route::get('/lineoff', [MainController::class, 'lineoff'])->name('lineoff');
     Route::get('/report/filter', [ReportController::class, 'filter'])->name('report.filter');
     Route::get('/report/missing', [ReportController::class, 'missing'])->name('report.missing');
     Route::get('/report/missing/export', [ReportController::class, 'missingExport'])->name('report.missing.export');
-// });
+});
 
 Route::get('/debug-auth', function () {
     return [
