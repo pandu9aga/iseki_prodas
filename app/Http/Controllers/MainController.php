@@ -152,8 +152,23 @@ class MainController extends Controller
         return redirect()->route('login');
     }
 
-    public function scan(){
-        return view('lineoff.scan');
+    public function scan(Request $request)
+    {
+        // Ambil tanggal dari query string, default ke hari ini
+        $selectedDate = $request->query('lineoff_date', Carbon::today()->toDateString());
+
+        $baseQuery = Plan::whereNotNull('Lineoff_Plan')
+                        ->whereDate('Lineoff_Plan', $selectedDate); // Filter langsung ke tanggal tertentu
+
+        $totalTractors = $baseQuery->count();
+
+        // Ambil tipe dan hitung jumlahnya per tipe untuk tanggal yang dipilih
+        $typesWithCount = $baseQuery->select('Type_Plan', DB::raw('COUNT(*) as count'))
+                                    ->groupBy('Type_Plan')
+                                    ->orderBy('Type_Plan') // Urutkan berdasarkan tipe
+                                    ->get();
+
+        return view('lineoff.scan', compact('selectedDate', 'totalTractors', 'typesWithCount'));
     }
 
     public function scanStore(Request $request)
@@ -261,10 +276,10 @@ class MainController extends Controller
                 ->where('Production_Date_Plan', $productionDate)
                 ->update(['Status_Plan' => $newStatus]);
 
-            $statusMessage = $allProcessesCompleted ? " dan Status Plan: Done." : " dan Status Plan: Pending.";
+            $statusMessage = $allProcessesCompleted ? " Dan Status Plan: Done." : "";
 
             // Redirect ke route 'lineoff' setelah sukses
-            return redirect()->route('lineoff')->with('success', "Data Lineoff untuk Sequence No {$sequenceNoFormatted} berhasil diperbarui." . $statusMessage);
+            return redirect()->route('scan')->with('success', "Data Lineoff untuk Sequence No {$sequenceNoFormatted} berhasil diperbarui." . $statusMessage);
 
         } catch (\Exception $e) {
             return redirect()->back()->withErrors(['general' => 'Gagal memperbarui data Lineoff dan Status: ' . $e->getMessage()]);
