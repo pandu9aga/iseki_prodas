@@ -308,15 +308,15 @@
                 <div class="card mb-3">
                     <div class="card-body">
                         <div class="table-responsive text-nowrap">
-                            <table id="reportsTable" class="table table-bordered">
+                            <table id="reportsTable" class="table table-bordered table-sm" style="font-size: 12px;">
                                 <thead>
                                     <tr>
                                         <th class="text-primary">No</th>
-                                        <th class="text-primary">Sequence No</th>
+                                        <th class="text-primary">Sequence</th>
                                         <th class="text-primary">Model Name</th>
                                         <th class="text-primary">Type</th>
-                                        <th class="text-primary">Production No</th>
-                                        <th class="text-primary">Production Date</th>
+                                        <th class="text-primary">Production</th>
+                                        <th class="text-primary">Date</th>
                                         <th class="text-primary">Lineoff</th>
                                         <th class="text-primary">Chasis No</th>
                                         <th class="text-primary">Model Label</th>
