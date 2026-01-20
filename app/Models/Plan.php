@@ -33,6 +33,11 @@ class Plan extends Model
         'Status_Plan'
     ];
 
+    public function scan()
+    {
+        return $this->belongsTo(Efficiency_Scan::class, 'Sequence_No_Plan', 'Sequence_No_Plan');
+    }
+
     // public function user()
     // {
     //     return $this->belongsTo(User::class, 'Id_User', 'Id_User');

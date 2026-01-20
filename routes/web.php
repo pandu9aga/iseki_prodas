@@ -9,14 +9,19 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\PlanController;
 use App\Http\Controllers\Admin\RuleController;
 use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Area\AreaController;
 
 Route::get('/', [MainController::class, 'index'])->name('/');
 Route::get('/login', [MainController::class, 'index'])->name('login');
 Route::post('/login/auth', [MainController::class, 'login'])->name('login.auth');
+Route::post('/login_area/auth', [MainController::class, 'login_area'])->name('login.area.auth');
 Route::get('/logout', [MainController::class, 'logout'])->name('logout');
+Route::get('/logoutn_area', [MainController::class, 'logout_area'])->name('logout.area');
 Route::get('/scan', [MainController::class, 'scan'])->name('scan');
 Route::post('/scan', [MainController::class, 'scanStore'])->name('scan.store');
 Route::get('/lineoff', [MainController::class, 'lineoff'])->name('lineoff');
+Route::get('/lineoff/export', [MainController::class, 'exportLineoff'])->name('lineoff.export');
+Route::get('/api/lineoff-data', [MainController::class, 'getLineoff'])->name('api.lineoff.data');
 Route::get('/report', [MainController::class, 'report'])->name('report');
 Route::get('/report/export', [MainController::class, 'exportReport'])->name('report.export');
 Route::get('/api/reports-data', [MainController::class, 'getReports'])->name('api.reports.data');
@@ -52,6 +57,11 @@ Route::middleware(AdminMiddleware::class)->group(function () {
     Route::get('/report/filter', [ReportController::class, 'filter'])->name('report.filter');
     Route::get('/report/missing', [ReportController::class, 'missing'])->name('report.missing');
     Route::get('/report/missing/export', [ReportController::class, 'missingExport'])->name('report.missing.export');
+});
+
+Route::middleware(AuthMiddleware::class)->group(function () {
+// Route::middleware('auth')->group(function () {
+    Route::get('/home', [AreaController::class, 'index'])->name('home');
 });
 
 Route::get('/debug-auth', function () {
