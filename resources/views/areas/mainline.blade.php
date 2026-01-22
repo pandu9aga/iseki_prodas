@@ -31,7 +31,7 @@
                                 <div class="row g-3 align-items-end">
                                     <!-- Kolom untuk Filter Tanggal -->
                                     <div class="col-md-8">
-                                        <label for="lineoff_date" class="form-label">Lineoff Date</label>
+                                        <label for="lineoff_date" class="form-label">Scan Date</label>
                                         <div class="input-group">
                                             <input type="date" name="lineoff_date" id="lineoff_date" class="form-control"
                                                 value="{{ request('lineoff_date', \Carbon\Carbon::today()->toDateString()) }}">
@@ -44,12 +44,12 @@
                                         <label class="form-label">&nbsp;</label> <!-- Label kosong untuk alignment -->
                                         <div>
                                             @if(request('lineoff_date'))
-                                                <a href="{{ route('area.report.export', ['lineoff_date' => request('lineoff_date')]) }}"
+                                                <a href="{{ route('area.mainline.report.export', ['lineoff_date' => request('lineoff_date')]) }}"
                                                     class="btn btn-success w-100">
                                                     <i class='bx bx-file'></i> Export Excel
                                                 </a>
                                             @else
-                                                <a href="{{ route('area.report.export', ['lineoff_date' => \Carbon\Carbon::today()->toDateString()]) }}"
+                                                <a href="{{ route('area.mainline.report.export', ['lineoff_date' => \Carbon\Carbon::today()->toDateString()]) }}"
                                                     class="btn btn-success w-100">
                                                     <i class='bx bx-file'></i> Export Excel
                                                 </a>
@@ -221,7 +221,7 @@
                                 <th class="text-primary">Sequence</th>
                                 <th class="text-primary">Model Name</th>
                                 <th class="text-primary">Type</th>
-                                <th class="text-primary">Assigned Hour</th>
+                                <th class="text-primary">Hour</th>
                                 <th class="text-primary">Production</th>
                                 <th class="text-primary">Date</th>
                                 <th class="text-primary">Time Scan</th>

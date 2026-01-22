@@ -67,10 +67,99 @@
         <div class="card">
             <h5 class="card-header text-primary">Area: {{ $areaName }}</h5>
             <div class="card-body">
-                <div class="alert alert-info" role="alert">
-                    <i class='bx bx-info-circle'></i>
-                    Menampilkan scan untuk area <strong>{{ $areaName }}</strong> pada tanggal yang dipilih.
+                <!-- Alert untuk notifikasi kesalahan -->
+                <div id="validationAlert" class="alert alert-danger d-none" role="alert">
+                    <span id="validationMessage"></span>
                 </div>
+
+                <form id="scanForm" action="{{ route('area.scan.store') }}" method="POST">
+                    @csrf
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="row">
+                                <div class="col-2">
+                                    <label class="form-label">Scan Type:</label>
+                                </div>
+
+                                {{-- Kondisi 1: Area adalah MOWER -> Hanya tampilkan MOCOL dan checked --}}
+                                @if(session('Name_Area') === 'MOWER')
+                                    <div class="col-2 form-check">
+                                        <input class="form-check-input" type="radio" name="scan_type" id="scanMocol"
+                                            value="mocol" checked>
+                                        <label class="form-check-label" for="scanMocol">
+                                            MOCOL
+                                        </label>
+                                    </div>
+                                @elseif(session('Name_Area') === 'LINE A' || session('Name_Area') === 'LINE B')
+                                    {{-- Kondisi 2: Area adalah LINE A atau LINE B -> Tampilkan UNIT (default checked) dan MOCOL --}}
+                                    <div class="col-2 form-check">
+                                        <input class="form-check-input" type="radio" name="scan_type" id="scanUnit"
+                                            value="unit" checked>
+                                        <label class="form-check-label" for="scanUnit">
+                                            UNIT
+                                        </label>
+                                    </div>
+                                    <div class="col-2 form-check">
+                                        <input class="form-check-input" type="radio" name="scan_type" id="scanMocol"
+                                            value="mocol">
+                                        <label class="form-check-label" for="scanMocol">
+                                            MOCOL
+                                        </label>
+                                    </div>
+                                @else
+                                    {{-- Kondisi 3: Area selain MOWER, LINE A, LINE B -> Hanya tampilkan UNIT dan checked --}}
+                                    <div class="col-2 form-check">
+                                        <input class="form-check-input" type="radio" name="scan_type" id="scanUnit"
+                                            value="unit" checked>
+                                        <label class="form-check-label" for="scanUnit">
+                                            UNIT
+                                        </label>
+                                    </div>
+                                @endif
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12 mb-2">
+                            <input type="text" id="rawInput" class="form-control form-control-sm mb-2" 
+                                placeholder="Scan QR here" autocomplete="off" autofocus>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <input type="text" class="form-control form-control-sm" id="sequence_no_display" 
+                                placeholder="Seq No" readonly/>
+                        </div>
+                        <div class="col-12">
+                            <input type="text" class="form-control form-control-sm" id="production_date_display" 
+                                placeholder="Date" readonly/>
+                        </div>
+                        <div class="col-12">
+                            <input type="text" class="form-control form-control-sm" id="model_display" 
+                                placeholder="Model" readonly/>
+                        </div>
+                        <div class="col-12">
+                            <input type="text" class="form-control form-control-sm" id="production_no_display" 
+                                placeholder="Prod No" readonly/>
+                        </div>
+                    </div>
+
+                    <button type="button" id="scanButton" class="btn btn-outline-primary w-100 mb-2">
+                        Scan QR (Camera)
+                    </button>
+                    <div id="qr-reader" style="margin-top:15px; display: none;"></div>
+
+                    <!-- Hidden inputs untuk form submission -->
+                    <input type="hidden" id="sequence_no" name="sequence_no"/>
+                    <input type="hidden" id="production_date" name="production_date"/>
+
+                    <button type="submit" id="submitBtn" class="btn btn-primary w-100 mt-4" disabled style="display:none;">
+                        Submit Scan
+                    </button>
+                </form>
             </div>
         </div>
     </div>
@@ -82,7 +171,7 @@
     <div class="col-md-4">
         <div class="card">
             <div class="card-body">
-                <h5 class="card-title text-primary mb-3">Tipe Traktor & Jumlah (Tanggal: {{ \Carbon\Carbon::parse($selectedDate)->locale('id')->isoFormat('D MMMM Y') }})</h5>
+                <h5 class="card-title text-primary mb-3">Tipe Traktor Terscan ({{ \Carbon\Carbon::parse($selectedDate)->locale('id')->isoFormat('D MMMM Y') }})</h5>
                 <div id="tractorTypesContainer">
                     <p class="text-muted text-center">Memuat data...</p>
                 </div>
@@ -102,7 +191,7 @@
                                 <th class="text-primary">Sequence</th>
                                 <th class="text-primary">Model Name</th>
                                 <th class="text-primary">Type</th>
-                                <th class="text-primary">Assigned Hour</th>
+                                <th class="text-primary">Hour</th>
                                 <th class="text-primary">Production</th>
                                 <th class="text-primary">Date</th>
                                 <th class="text-primary">Time Scan</th>
@@ -122,9 +211,44 @@
     </div>
 </div>
 
+<!-- Modal Validasi -->
+<div class="modal fade" id="validationModal" tabindex="-1" aria-labelledby="validationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title text-white" id="validationModalLabel">Validasi Gagal</h5>
+            </div>
+            <div class="modal-body">
+                <h4 id="validationModalMessage">Terjadi kesalahan.</h4>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Success -->
+<div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title text-white" id="successModalLabel">Scan Berhasil</h5>
+            </div>
+            <div class="modal-body">
+                <h4 id="successModalMessage"></h4>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" data-bs-dismiss="modal">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @section('script')
+<script src="{{ asset('assets/js/html5-qrcode.min.js') }}"></script>
 <script>
     $(document).ready(function () {
         // Clone header untuk filter kolom
@@ -276,12 +400,155 @@
                     });
                 });
 
-                // Load tractor types setelah data selesai
                 loadTractorTypes();
             }
         });
 
-        // Fungsi untuk load tractor types dari data table
+        // QR Code Scanner
+        let html5QrcodeScanner;
+        const scanButton = document.getElementById('scanButton');
+        const qrReaderElement = document.getElementById('qr-reader');
+        const rawInput = document.getElementById('rawInput');
+        const sequenceNoInput = document.getElementById('sequence_no');
+        const productionDateInput = document.getElementById('production_date');
+        const sequenceNoDisplay = document.getElementById('sequence_no_display');
+        const productionDateDisplay = document.getElementById('production_date_display');
+        const modelDisplay = document.getElementById('model_display');
+        const productionNoDisplay = document.getElementById('production_no_display');
+        const submitBtn = document.getElementById('submitBtn');
+        const scanForm = document.getElementById('scanForm');
+        const validationModal = new bootstrap.Modal(document.getElementById('validationModal'));
+        const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+
+        let scanComplete = false;
+
+        function resetScan() {
+            sequenceNoInput.value = '';
+            productionDateInput.value = '';
+            sequenceNoDisplay.value = '';
+            productionDateDisplay.value = '';
+            modelDisplay.value = '';
+            productionNoDisplay.value = '';
+            rawInput.value = '';
+            scanComplete = false;
+            submitBtn.disabled = true;
+            submitBtn.style.display = 'none';
+        }
+
+        function showValidationModal(message) {
+            resetScan();
+            document.getElementById('validationModalMessage').textContent = message;
+            validationModal.show();
+            setTimeout(() => {
+                validationModal.hide();
+                rawInput.focus();
+            }, 3000);
+        }
+
+        function processScan(parts, autoSubmit = false) {
+            if (scanComplete) return;
+
+            if (parts.length >= 4) {
+                sequenceNoInput.value = parts[0].trim();
+                productionDateInput.value = parts[1].trim();
+                sequenceNoDisplay.value = parts[0].trim();
+                productionDateDisplay.value = parts[1].trim();
+                modelDisplay.value = parts[2].trim();
+                productionNoDisplay.value = parts[3].trim();
+
+                scanComplete = true;
+                submitBtn.disabled = false;
+                submitBtn.style.display = 'block';
+
+                // Auto submit jika dari camera scanner
+                if (autoSubmit) {
+                    setTimeout(() => {
+                        scanForm.submit();
+                    }, 500);
+                }
+            } else {
+                showValidationModal('Format QR Code tidak valid');
+            }
+        }
+
+        // USB Scanner Input
+        rawInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const rawValue = this.value.trim();
+                if (!rawValue) return;
+
+                const parts = rawValue.split(';');
+                processScan(parts, true); // Manual submit
+                this.value = '';
+            }
+        });
+
+        // Camera Scanner Button
+        scanButton.addEventListener('click', function() {
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.clear().then(() => {
+                    html5QrcodeScanner = null;
+                    qrReaderElement.style.display = 'none';
+                    rawInput.focus();
+                }).catch(console.error);
+                return;
+            }
+
+            qrReaderElement.style.display = 'block';
+
+            html5QrcodeScanner = new Html5QrcodeScanner(
+                'qr-reader', {
+                    fps: 10,
+                    qrbox: { width: 300, height: 300 },
+                }
+            );
+
+            function onScanSuccess(decodedText, decodedResult) {
+                const parts = decodedText.split(';');
+                processScan(parts, true); // Auto submit dari camera
+
+                html5QrcodeScanner.clear().then(() => {
+                    html5QrcodeScanner = null;
+                    qrReaderElement.style.display = 'none';
+                }).catch(console.error);
+            }
+
+            html5QrcodeScanner.render(onScanSuccess, function(errorMessage) {
+                console.warn("QR Code scan error:", errorMessage);
+            });
+        });
+
+        // Session messages
+        @if(session('success'))
+            document.getElementById('successModalMessage').textContent = '{{ session("success") }}';
+            successModal.show();
+            setTimeout(() => {
+                successModal.hide();
+                resetScan();
+                table.draw();
+                rawInput.focus();
+            }, 3000);
+        @endif
+
+        @if(session('error'))
+            showValidationModal('{{ session("error") }}');
+        @endif
+
+        // --- FOKUS KE RAW INPUT SAAT RADIO BUTTON DIKLIK ---
+        document.querySelectorAll('input[name="scan_type"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                // Setelah radio dipilih, fokuskan ke rawInput
+                rawInput.focus();
+            });
+        });
+        // --- AKHIR FOKUS ---
+
+        // Focus on load
+        setTimeout(() => {
+            rawInput.focus();
+        }, 300);
+
         function loadTractorTypes() {
             var typeCount = {};
             var validTypes = [
@@ -310,7 +577,6 @@
                 'TXGS': '#E7C6FF'
             };
 
-            // Hitung tipe dari semua data
             table.rows().data().each(function(row) {
                 var type = row.Type_Plan;
                 if (type) {
@@ -318,7 +584,6 @@
                 }
             });
 
-            // Render tractor types
             var html = '';
             if (Object.keys(typeCount).length > 0) {
                 html = '<div class="row">';
