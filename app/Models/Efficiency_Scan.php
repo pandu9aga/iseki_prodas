@@ -48,11 +48,17 @@ class Efficiency_Scan extends Model
         return $this->belongsTo(Efficiency_Area::class, 'Id_Area', 'Id_Area');
     }
 
-    public function plan()
+    public function getPlanAttribute()
     {
-        return $this->belongsTo(Plan::class, 'Sequence_No_Plan', 'Sequence_No_Plan');
-    }
+        $noSeq = $this->Sequence_No_Plan;
+        $prodDate = $this->Production_Date_Plan;
 
-    // Jika Id_Area hanya ada di dailyJob, maka gunakan ini di view/controller:
-    // $scan->dailyJob->area
+        $noSeq5Digit = str_pad($noSeq, 5, '0', STR_PAD_LEFT);
+
+        $plan = Plan::whereRaw('LPAD(?, 5, "0") = Sequence_No_Plan', [$noSeq5Digit])
+                    ->where('Production_Date_Plan', $prodDate)
+                    ->first();
+
+        return $plan;
+    }
 }

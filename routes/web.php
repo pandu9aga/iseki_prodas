@@ -60,8 +60,11 @@ Route::middleware(AdminMiddleware::class)->group(function () {
 });
 
 Route::middleware(AuthMiddleware::class)->group(function () {
-// Route::middleware('auth')->group(function () {
     Route::get('/home', [AreaController::class, 'index'])->name('home');
+    Route::get('/area/report/export', [AreaController::class, 'exportReport'])->name('area.report.export');
+    Route::get('/api/area/mainline/reports-data', [AreaController::class, 'getMainlineReports'])->name('api.area.mainline.reports.data');
+    Route::get('/api/area/reports-data', [AreaController::class, 'getReports'])->name('api.area.reports.data');
+    Route::post('/home/mainline/scan', [AreaController::class, 'scanMainlineStore'])->name('area.mainline.scan.store');
 });
 
 Route::get('/debug-auth', function () {

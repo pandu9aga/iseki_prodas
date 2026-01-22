@@ -37,26 +37,10 @@
             <!-- Tombol-tombol di pojok kanan hanya muncul di layar XL dan besar -->
             <ul class="navbar-nav flex-row align-items-center ms-auto d-none d-xl-flex">
                 <li class="nav-item">
-                    <a class="nav-link" href="#">
+                    <a class="nav-link" href="{{ route('home') }}">
                         <!-- Ganti dengan route kamu -->
                         <button class="btn btn-outline-secondary me-2">
                             Scan
-                        </button>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#">
-                        <!-- Ganti dengan route kamu -->
-                        <button class="btn btn-outline-secondary me-2">
-                            Lineoff
-                        </button>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#">
-                        <!-- Ganti dengan route kamu -->
-                        <button class="btn btn-outline-secondary me-2">
-                            Report
                         </button>
                     </a>
                 </li>
