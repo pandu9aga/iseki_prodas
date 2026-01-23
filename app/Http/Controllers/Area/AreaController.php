@@ -270,9 +270,11 @@ class AreaController extends Controller
                     'Id_Tractor' => $tractor->Id_Tractor,
                 ];
 
+                $scannedHour = $tractor->Hour_Tractor - ($tractor->Hour_Tractor * 0.078);
+
                 $scanData = [
                     'Time_Scan' => $timestampNow,
-                    'Assigned_Hour_Scan' => $tractor->Hour_Tractor,
+                    'Assigned_Hour_Scan' => $scannedHour,
                 ];
 
                 Efficiency_Scan::updateOrCreate($uniqueKey, $scanData);
@@ -356,10 +358,12 @@ class AreaController extends Controller
                 // 'Id_Tractor' => $tractor->Id_Tractor,
             ];
 
+            $scannedHour = $tractor->Hour_Tractor - ($tractor->Hour_Tractor * 0.078);
+
             $scanData = [
                 'Id_Tractor' => $tractor->Id_Tractor,
                 'Time_Scan' => $timestampNow,
-                'Assigned_Hour_Scan' => $tractor->Hour_Tractor,
+                'Assigned_Hour_Scan' => $scannedHour,
                 // 'Sequence_No_Plan' => $sequenceNoFormatted, // Sudah ada di $uniqueKey
                 // 'Production_Date_Plan' => $productionDate, // Sudah ada di $uniqueKey
                 // 'Id_Area' => $idArea, // Sudah ada di $uniqueKey

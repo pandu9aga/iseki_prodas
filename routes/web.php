@@ -57,6 +57,10 @@ Route::middleware(AdminMiddleware::class)->group(function () {
     Route::get('/report/filter', [ReportController::class, 'filter'])->name('report.filter');
     Route::get('/report/missing', [ReportController::class, 'missing'])->name('report.missing');
     Route::get('/report/missing/export', [ReportController::class, 'missingExport'])->name('report.missing.export');
+
+    Route::get('/report/area', [ReportController::class, 'areaReport'])->name('report.area');
+    Route::get('/api/admin/area/reports-data', [ReportController::class, 'getAreaReports'])->name('api.admin.area.reports.data');
+    Route::get('/report/area/export', [ReportController::class, 'exportAreaReport'])->name('admin.area.report.export');
 });
 
 Route::middleware(AuthMiddleware::class)->group(function () {

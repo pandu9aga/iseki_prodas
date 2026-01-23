@@ -140,7 +140,7 @@
     <div class="col-md-4">
         <div class="card">
             <div class="card-body">
-                <h5 class="card-title text-primary mb-3">Tipe Traktor & Jumlah (Tanggal: {{ \Carbon\Carbon::parse($selectedDate)->locale('id')->isoFormat('D MMMM Y') }})</h5>
+                <h5 class="card-title text-primary mb-3">Tipe Traktor Terscan ({{ \Carbon\Carbon::parse($selectedDate)->locale('id')->isoFormat('D MMMM Y') }})</h5>
                 @if ($typesWithCount->isNotEmpty())
                     <?php
                     // Definisikan tipe valid di sini

@@ -153,6 +153,11 @@
                 <div data-i18n="Report">Report</div>
               </a>
               <ul class="menu-sub">
+                <li class="menu-item {{ (isset($sub) && $sub === 'area') ? 'active' : '' }}">
+                  <a href="{{ route('report.area') }}" class="menu-link">
+                    <div data-i18n="Area">Area</div>
+                  </a>
+                </li>
                 <li class="menu-item {{ (isset($sub) && $sub === 'lineoff') ? 'active' : '' }}">
                   <a href="{{ route('report.lineoff') }}" class="menu-link"> <!-- Ganti dengan route kamu -->
                     <div data-i18n="Lineoff">Lineoff</div>
