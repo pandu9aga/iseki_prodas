@@ -18,6 +18,39 @@
     <link href="{{ asset('assets/css/fixedColumns.dataTables.min.css') }}" rel="stylesheet">
     <script src="{{ asset('assets/vendor/js/helpers.js') }}"></script>
     <script src="{{ asset('assets/js/config.js') }}"></script>
+    <style>
+        .tractor-types-container {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .tractor-type-card {
+            text-align: center;
+            border-radius: 0.25rem;
+            border: 1px solid #dee2e6;
+            margin-bottom: 10px;
+            padding: 8px;
+        }
+        
+        .tractor-type-card img {
+            max-height: 60px;
+            object-fit: contain;
+            margin-bottom: 5px;
+        }
+        
+        .tractor-type-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            display: inline-block;
+            margin-bottom: 5px;
+        }
+        
+        .tractor-type-count {
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: #000;
+        }
+    </style>
 </head>
 
 <body>
@@ -35,14 +68,14 @@
 
             <!-- Tombol-tombol di pojok kanan hanya muncul di layar XL dan besar -->
             <ul class="navbar-nav flex-row align-items-center ms-auto d-none d-xl-flex">
-                <li class="nav-item">
+                {{-- <li class="nav-item">
                     <a class="nav-link" href="{{ route('scan') }}">
                         <!-- Ganti dengan route kamu -->
                         <button class="btn btn-outline-secondary me-2">
                             Scan
                         </button>
                     </a>
-                </li>
+                </li> --}}
                 <li class="nav-item">
                     <a class="nav-link" href="{{ route('lineoff') }}">
                         <!-- Ganti dengan route kamu -->
@@ -76,8 +109,8 @@
                         <i class="bx bx-dots-vertical-rounded bx-sm"></i> <!-- Ikon titik tiga -->
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="{{ route('scan') }}"><i class="bx bx-qr me-2"></i> Scan</a>
-                        </li>
+                        {{-- <li><a class="dropdown-item" href="{{ route('scan') }}"><i class="bx bx-qr me-2"></i> Scan</a>
+                        </li> --}}
                         <li><a class="dropdown-item" href="{{ route('lineoff') }}"><i
                                     class="bx bx-stop-circle me-2"></i> Lineoff</a></li>
                         <li><a class="dropdown-item" href="{{ route('report') }}"><i class="bx bx-file me-2"></i>
@@ -95,169 +128,136 @@
     </nav>
 
     <div class="container-xxl flex-grow-1 container-p-y">
-        <h4 class="fw-bold py-3 mb-4"><span class="text-muted fw-light">Report /</span> Area</h4>
-
-        <!-- Filter Tanggal dan Export -->
-		<div class="row mb-3">
-			<div class="col-md-3 mb-1">
-				<!-- Kolom untuk Total Tractors Card -->
-				<div class="card">
-					<div class="card-body text-center">
-						<h5 class="mb-0">Total:</h5>
-						<h1 class="text-primary mb-0">{{ number_format($totalTractors) }}</h1>
-						<small class="text-muted">
-							@if ($selectedDate)
-								{{ \Carbon\Carbon::parse($selectedDate)->isoFormat('D MMMM Y') }}
-							@else
-								All Dates
-							@endif
-						</small>
-					</div>
-				</div>
-			</div>
-			<div class="col-md-6">
-				<div class="card">
-					<form method="GET">
-						<div class="card">
-							<div class="card-body">
-								<div class="row g-3 align-items-end">
-									<!-- Kolom untuk Filter Tanggal -->
-									<div class="col-md-8">
-										<label for="lineoff_date" class="form-label">Lineoff Date</label>
-										<div class="input-group">
-											<input type="date" name="lineoff_date" id="lineoff_date" class="form-control"
-												value="{{ request('lineoff_date', \Carbon\Carbon::today()->toDateString()) }}">
-											<button type="submit" class="btn btn-outline-primary">Apply</button>
-										</div>
-									</div>
-
-									<!-- Kolom untuk Tombol Export -->
-									<div class="col-md-4">
-										<label class="form-label">&nbsp;</label> <!-- Label kosong untuk alignment -->
-										<div>
-											@if(request('lineoff_date'))
-												<a href="{{ route('report.export', ['lineoff_date' => request('lineoff_date')]) }}"
-													class="btn btn-success w-100">
-													<i class='bx bx-file'></i> Export Excel
-												</a>
-											@else
-												<a href="{{ route('report.export', ['lineoff_date' => \Carbon\Carbon::today()->toDateString()]) }}"
-													class="btn btn-success w-100">
-													<i class='bx bx-file'></i> Export Excel
-												</a>
-											@endif
-										</div>
-									</div>
-								</div>
-							</div>
-						</div>
-					</form>
-				</div>
-			</div>
-		</div>
-
-        <!-- Summary Cards -->
-        <div class="row mb-3">
-            <!-- Tractor Types Card (New Structure) -->
-            <div class="col-12">
+        <div class="row">
+            <div class="col-lg-12">
                 <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Area Reports</h5>
+                    </div>
                     <div class="card-body">
-                        <h5 class="card-title text-primary mb-3">Tipe Traktor & Jumlah (Tanggal: {{ \Carbon\Carbon::parse($selectedDate)->locale('id')->isoFormat('D MMMM Y') }})</h5>
-                        @if ($typesWithCount->isNotEmpty())
-                            <?php
-                            // Definisikan tipe valid di sini
-                            $validTypes = [
-                                'GC', 'GNT', 'GNTDAI', 'MF', 'MFDAI', 'MFE', 'MFEDAI', 'NT', 'NTDAI',
-                                'SF2', 'SF5', 'SUSXG2', 'SXG2', 'SXG2日本', 'SXG3', 'TLE', 'TLEDAI', 'TXGS'
-                            ];
-                            ?>
-                            <div class="row">
-                                @foreach ($typesWithCount as $typeData)
-                                    <div class="col-lg-3 col-md-4 col-sm-6 mb-2">
-                                        <!-- Card Pipih -->
-                                        <div class="card text-center border-1 shadow-none" style="border-radius: 0.25rem;">
-                                            <div class="card-body p-2 d-flex flex-column">
-												<div class="row">
-													<div class="col-md-6">
-														<!-- Gambar -->
-														<img src="{{ asset('assets/img/tractors/' . $typeData->Type_Plan . '.png') }}"
-															alt="{{ $typeData->Type_Plan }}"
-															class="img-fluid mb-1" style="max-height: 50px; object-fit: contain;">
-													</div>
-													<div class="col-md-6">
-														<!-- Badge Type Plan -->
-														<span class="badge mb-1" style="
-															@if(in_array($typeData->Type_Plan, $validTypes))
-																@switch($typeData->Type_Plan)
-																	@case('GC') background-color: #FFB3BA; @break {{-- Pastel Red --}}
-																	@case('GNT') background-color: #BAFFC9; @break {{-- Pastel Green --}}
-																	@case('GNTDAI') background-color: #BAE1FF; @break {{-- Pastel Light Blue --}}
-																	@case('MF') background-color: #E0BBE4; @break {{-- Pastel Lavender --}}
-																	@case('MFDAI') background-color: #D291BC; @break {{-- Pastel Orchid --}}
-																	@case('MFE') background-color: #957DAD; @break {{-- Pastel Purple --}}
-																	@case('MFEDAI') background-color: #FEC89A; @break {{-- Pastel Orange --}}
-																	@case('NT') background-color: #F7D794; @break {{-- Pastel Yellow --}}
-																	@case('NTDAI') background-color: #A8E6CF; @break {{-- Pastel Mint --}}
-																	@case('SF2') background-color: #FFDAC1; @break {{-- Pastel Peach --}}
-																	@case('SF5') background-color: #B5EAD7; @break {{-- Pastel Sage --}}
-																	@case('SUSXG2') background-color: #C7CEEA; @break {{-- Pastel Periwinkle --}}
-																	@case('SXG2') background-color: #B8E0D2; @break {{-- Pastel Thistle --}}
-																	@case('SXG2日本') background-color: #FFDFD3; @break {{-- Pastel Apricot --}}
-																	@case('SXG3') background-color: #E2F0CB; @break {{-- Pastel Pear --}}
-																	@case('TLE') background-color: #D4F0F0; @break {{-- Pastel Ice --}}
-																	@case('TLEDAI') background-color: #F6EAC2; @break {{-- Pastel Sand --}}
-																	@case('TXGS') background-color: #E7C6FF; @break {{-- Pastel Lilac --}}
-																	@default background-color: #D3D3D3; @break {{-- Abu-abu Muda --}} 
-																@endswitch
-															@else
-																background-color: #6c757d; /* Abu-abu untuk tipe tidak valid */
-															@endif
-															color: black; font-size: 0.8rem; padding: 0.25rem 0.5rem;">
-															{{ $typeData->Type_Plan }}
-														</span>
-														<!-- Jumlah -->
-														<p class="card-text text-black mb-0" style="font-size: 1.2rem; font-weight: 500;">{{ $typeData->count }}</p>
-													</div>
-												</div>
+                        <!-- Nav Tabs untuk Area -->
+                        <ul class="nav nav-tabs" id="areaTabs" role="tablist">
+                            @foreach ($areas as $area)
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link {{ $loop->first ? 'active' : '' }}" 
+                                        id="area-{{ $area->Id_Area }}-tab" 
+                                        data-bs-toggle="tab" 
+                                        data-bs-target="#area-{{ $area->Id_Area }}" 
+                                        type="button" 
+                                        role="tab" 
+                                        aria-controls="area-{{ $area->Id_Area }}" 
+                                        aria-selected="{{ $loop->first ? 'true' : 'false' }}">
+                                        {{ $area->Name_Area }}
+                                    </button>
+                                </li>
+                            @endforeach
+                        </ul>
+
+                        <h5 class="text-primary mt-4 mb-0 ms-4">Area: <span id="areaName"></span></h5>
+                        <!-- Tab Content -->
+                        <div class="tab-content" id="areaTabContent">
+                            @foreach ($areas as $area)
+                                <div class="tab-pane fade {{ $loop->first ? 'show active' : '' }}" 
+                                    id="area-{{ $area->Id_Area }}" 
+                                    role="tabpanel" 
+                                    aria-labelledby="area-{{ $area->Id_Area }}-tab">
+                                    
+                                    <!-- Filter, Export, dan Tractor Types Card -->
+                                    <div class="row mb-3">
+                                        <!-- Kolom Kiri: Filter dan Export -->
+                                        <div class="col-md-8">
+                                            <div class="row g-3 align-items-end">
+                                                <div class="col-md-8">
+                                                    <label for="scan_date_{{ $area->Id_Area }}" class="form-label">Scan Date</label>
+                                                    <div class="input-group">
+                                                        <input type="date" 
+                                                            name="scan_date" 
+                                                            id="scan_date_{{ $area->Id_Area }}" 
+                                                            class="form-control scan_date_input"
+                                                            data-area-id="{{ $area->Id_Area }}"
+                                                            value="{{ Carbon\Carbon::today()->toDateString() }}">
+                                                        <button type="button" 
+                                                            class="btn btn-outline-primary apply-date-btn" 
+                                                            data-area-id="{{ $area->Id_Area }}">
+                                                            Apply
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <a href="#" 
+                                                        class="btn btn-success w-100 export-btn" 
+                                                        data-area-id="{{ $area->Id_Area }}"
+                                                        data-area-name="{{ $area->Name_Area }}">
+                                                        <i class='bx bx-file'></i> Export Excel
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Kolom Kanan: Total Scan Card -->
+                                        <div class="col-md-4">
+                                            <div class="card text-center">
+                                                <div class="card-body">
+                                                    <h5 class="mb-1">Total Scan</h5>
+                                                    <h3 class="text-primary total-scan mb-2" id="total_{{ $area->Id_Area }}">0</h3>
+                                                    <small class="text-muted d-block" id="totalScanDate_{{ $area->Id_Area }}">
+                                                        Tanggal: -
+                                                    </small>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                @endforeach
-                            </div>
-                        @else
-                            <p class="text-muted mb-0">Tidak ada data traktor yang ditemukan untuk tanggal ini.</p>
-                        @endif
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        <!-- Tabel -->
-        <div class="row">
-            <div class="col">
-                <div class="card mb-3">
-                    <div class="card-body">
-                        <div class="table-responsive text-nowrap">
-                            <table id="reportsTable" class="table table-bordered">
-                                <thead>
-                                    <tr>
-                                        <th class="text-primary">No</th>
-                                        <th class="text-primary">Sequence No</th>
-                                        <th class="text-primary">Model Name</th>
-                                        <th class="text-primary">Type</th>
-                                        <th class="text-primary">Production No</th>
-                                        <th class="text-primary">Production Date</th>
-                                        <th class="text-primary">Lineoff</th>
-                                        <th class="text-primary">Chasis No</th>
-                                        <th class="text-primary">Model Label</th>
-                                        <th class="text-primary">Safety Frame Label</th>
-                                        <th class="text-primary">Model Mower</th>
-                                        <th class="text-primary">Mower No</th>
-                                        <th class="text-primary">Model Collector</th>
-                                        <th class="text-primary">Collector No</th>
-                                    </tr>
-                                </thead>
-                            </table>
+                                    <!-- Tractor Types Card dan Tabel Data -->
+                                    <div class="row mb-3">
+                                        <!-- Kolom Kiri: Tractor Types Card -->
+                                        <div class="col-md-4">
+                                            <div class="card">
+                                                <div class="card-body">
+                                                    <h5 class="card-title text-primary mb-2">Tipe Traktor Terscan (<span id="tractorTypeDate_{{ $area->Id_Area }}"></span>)</h5>
+                                                    <div id="tractorTypesContainer_{{ $area->Id_Area }}" class="tractor-types-container row">
+                                                        <p class="text-muted text-center">Memuat data...</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Kolom Kanan: Tabel Data -->
+                                        <div class="col-md-8">
+                                            <div class="card mb-3">
+                                                <div class="card-body">
+                                                    <div class="table-responsive">
+                                                        <table id="reportsTable_{{ $area->Id_Area }}" 
+                                                            class="table table-bordered table-sm area-reports-table" 
+                                                            style="font-size: 12px;"
+                                                            data-area-id="{{ $area->Id_Area }}">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th class="text-primary">No</th>
+                                                                    <th class="text-primary">Sequence</th>
+                                                                    <th class="text-primary">Model Name</th>
+                                                                    <th class="text-primary">Type</th>
+                                                                    <th class="text-primary">Hour</th>
+                                                                    <th class="text-primary">Production</th>
+                                                                    <th class="text-primary">Date</th>
+                                                                    <th class="text-primary">Time Scan</th>
+                                                                    <th class="text-primary">Chasis No</th>
+                                                                    <th class="text-primary">Model Label</th>
+                                                                    <th class="text-primary">Safety Frame Label</th>
+                                                                    <th class="text-primary">Model Mower</th>
+                                                                    <th class="text-primary">Mower No</th>
+                                                                    <th class="text-primary">Model Collector</th>
+                                                                    <th class="text-primary">Collector No</th>
+                                                                </tr>
+                                                            </thead>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
                         </div>
                     </div>
                 </div>
@@ -277,155 +277,171 @@
     <script src="{{ asset('assets/js/dataTables.fixedColumns.min.js') }}"></script>
 
     <script>
-        $(document).ready(function () {
-            // Clone header untuk filter kolom
-            $('#reportsTable thead tr')
-                .clone(true)
-                .addClass('filters')
-                .appendTo('#reportsTable thead');
+    $(document).ready(function() {
+        var tables = {};
 
-            var table = $('#reportsTable').DataTable({
+        // Definisi tipe traktor dan warnanya
+        var validTypes = ['GC', 'GNT', 'GNTDAI', 'MF', 'MFDAI', 'MFE', 'MFEDAI', 'NT', 'NTDAI', 'SF2', 'SF5', 'SUSXG2', 'SXG2', 'SXG2日本', 'SXG3', 'TLE', 'TLEDAI', 'TXGS'];
+        var typeColors = {
+            'GC': '#FFB3BA', 'GNT': '#BAFFC9', 'GNTDAI': '#BAE1FF', 'MF': '#E0BBE4',
+            'MFDAI': '#D291BC', 'MFE': '#957DAD', 'MFEDAI': '#FEC89A', 'NT': '#F7D794',
+            'NTDAI': '#A8E6CF', 'SF2': '#FFDAC1', 'SF5': '#B5EAD7', 'SUSXG2': '#C7CEEA',
+            'SXG2': '#B8E0D2', 'SXG2日本': '#FFDFD3', 'SXG3': '#E2F0CB', 'TLE': '#D4F0F0',
+            'TLEDAI': '#F6EAC2', 'TXGS': '#E7C6FF'
+        };
+
+        // Inisialisasi table untuk setiap area
+        @foreach ($areas as $area)
+            tables[{{ $area->Id_Area }}] = initTable({{ $area->Id_Area }});
+        @endforeach
+
+        // --- UPDATE NAMA AREA DI HEADER ---
+        // Event listener untuk perubahan tab
+        $('#areaTabs').on('shown.bs.tab', 'button[data-bs-toggle="tab"]', function (e) {
+            // Ambil ID pane dari tab yang diaktifkan
+            const activePaneId = $(e.target).attr('data-bs-target').substring(1); // Misalnya: 'area-2'
+
+            // Cari elemen tab button yang aktif untuk mengambil nama area
+            const activeTabButton = $(e.target); // Ini adalah button yang diklik
+            const areaName = activeTabButton.text().trim(); // Ambil teksnya, misalnya "Line Off"
+
+            // Update isi span dengan ID 'areaName'
+            document.getElementById('areaName').textContent = areaName;
+        });
+
+        // Set nama area awal saat halaman dimuat (tab pertama aktif)
+        const initialActiveTab = $('#areaTabs button.nav-link.active');
+        if (initialActiveTab.length) {
+            const initialAreaName = initialActiveTab.text().trim();
+            document.getElementById('areaName').textContent = initialAreaName;
+        }
+        // --- AKHIR UPDATE NAMA AREA ---
+
+        function initTable(areaId) {
+            var tableId = 'reportsTable_' + areaId;
+            
+            return $('#' + tableId).DataTable({
                 processing: true,
                 serverSide: true,
                 deferRender: true,
                 pageLength: 50,
-                order: [
-                    [6, 'desc']
-                ],
+                order: [[7, 'desc']],
                 ajax: {
                     url: "{{ route('api.reports.data') }}",
                     type: 'GET',
-                    data: function (d) {
-                        d.lineoff_date = $('#lineoff_date').val();
+                    data: function(d) {
+                        d.area_id = areaId;
+                        d.scan_date = $('#scan_date_' + areaId).val();
                     },
-                    error: function (xhr, error, code) {
-                        console.warn("DataTables AJAX Error:", error, code);
+                    dataSrc: function(json) {
+                        // Update total scan
+                        $('#total_' + areaId).text(json.recordsFiltered);
+                        
+                        // Update tractor types card
+                        updateTractorTypes(areaId, json.data);
+                        
+                        return json.data;
                     }
                 },
                 scrollX: true,
-                scrollY: "500px",
+                scrollY: "400px",
                 scrollCollapse: true,
                 orderCellsTop: true,
-                columns: [{
+                columns: [
+                    {
                         data: 'DT_RowIndex',
                         name: 'DT_RowIndex',
                         orderable: false,
                         searchable: false
                     },
-                    {
-                        data: 'Sequence_No_Plan',
-                        name: 'Sequence_No_Plan'
-                    },
-                    {
-                        data: 'Model_Name_Plan',
-                        name: 'Model_Name_Plan'
-                    },
+                    { data: 'Sequence_No_Plan', name: 'Sequence_No_Plan' },
+                    { data: 'Model_Name_Plan', name: 'Model_Name_Plan' },
                     {
                         data: 'Type_Plan',
                         name: 'Type_Plan',
-                        render: function(data, type, row, meta) {
-							// Definisikan tipe valid di sini
-							var validTypes = [
-								'GC', 'GNT', 'GNTDAI', 'MF', 'MFDAI', 'MFE', 'MFEDAI', 'NT', 'NTDAI',
-								'SF2', 'SF5', 'SUSXG2', 'SXG2', 'SXG2日本', 'SXG3', 'TLE', 'TLEDAI', 'TXGS'
-							];
-
-							// Definisikan warna pastel unik untuk setiap tipe
-							var typeColors = {
-								'GC': '#FFB3BA',     // Pastel Red
-								'GNT': '#BAFFC9',    // Pastel Green
-								'GNTDAI': '#BAE1FF', // Pastel Light Blue
-								'MF': '#E0BBE4',     // Pastel Lavender
-								'MFDAI': '#D291BC',  // Pastel Orchid
-								'MFE': '#957DAD',    // Pastel Purple
-								'MFEDAI': '#FEC89A', // Pastel Orange
-								'NT': '#F7D794',     // Pastel Yellow
-								'NTDAI': '#A8E6CF',  // Pastel Mint
-								'SF2': '#FFDAC1',    // Pastel Peach
-								'SF5': '#B5EAD7',    // Pastel Sage
-								'SUSXG2': '#C7CEEA', // Pastel Periwinkle
-								'SXG2': '#B8E0D2',   // Pastel Thistle
-								'SXG2日本': '#FFDFD3', // Pastel Apricot
-								'SXG3': '#E2F0CB',   // Pastel Pear
-								'TLE': '#D4F0F0',    // Pastel Ice
-								'TLEDAI': '#F6EAC2', // Pastel Sand
-								'TXGS': '#E7C6FF'    // Pastel Lilac
-							};
-
-							// Tentukan warna berdasarkan tipe
-							var bgColor = '#D3D3D3'; // Default abu-abu muda
-							if (validTypes.includes(data)) {
-								bgColor = typeColors[data] || bgColor; // Gunakan warna dari map, jika tidak ditemukan gunakan default
-							}
-
-							// Kembalikan HTML span dengan styling badge
-							return '<span class="badge" style="background-color: ' + bgColor + '; color: black;">' + data + '</span>'; // Gunakan warna teks hitam untuk kontras yang lebih baik dengan warna pastel
-						},
-                    },
-                    {
-                        data: 'Production_No_Plan',
-                        name: 'Production_No_Plan'
-                    },
-                    {
-                        data: 'Production_Date_Plan',
-                        name: 'Production_Date_Plan'
-                    },
-                    {
-                        data: 'Lineoff_Plan',
-                        name: 'Lineoff_Plan'
-                    },
-                    {
-                        data: 'Chasis_No_Plan',
-                        name: 'Chasis_No_Plan'
-                    },
-                    {
-                        data: 'Model_Label_Plan',
-                        name: 'Model_Label_Plan'
-                    },
-                    {
-                        data: 'Safety_Frame_Label_Plan',
-                        name: 'Safety_Frame_Label_Plan'
-                    },
-                    {
-                        data: 'Model_Mower_Plan',
-                        name: 'Model_Mower_Plan'
-                    },
-                    {
-                        data: 'Mower_No_Plan',
-                        name: 'Mower_No_Plan'
-                    },
-                    {
-                        data: 'Model_Collector_Plan',
-                        name: 'Model_Collector_Plan'
-                    },
-                    {
-                        data: 'Collector_No_Plan',
-                        name: 'Collector_No_Plan'
-                    }
-                ],
-                initComplete: function () {
-                    var api = this.api();
-                    api.columns().eq(0).each(function (colIdx) {
-                        var cell = $('.filters th').eq($(api.column(colIdx).header())
-                        .index());
-                        var title = $(cell).text();
-                        if (title !== "No") {
-                            $(cell).html('<input type="text" placeholder="Search ' + title +
-                                '" class="form-control form-control-sm" style="width:100%; padding:2px 4px; font-size:12px;"/>'
-                            );
-                        } else {
-                            $(cell).html('');
+                        render: function(data) {
+                            var bgColor = validTypes.includes(data) ? (typeColors[data] || '#D3D3D3') : '#D3D3D3';
+                            return '<span class="badge" style="background-color: ' + bgColor + '; color: black;">' + data + '</span>';
                         }
-                        $('input', cell).off().on('keyup change clear', function () {
-                            if (api.column(colIdx).search() !== this.value) {
-                                api.column(colIdx).search(this.value).draw();
-                            }
-                        });
-                    });
+                    },
+                    { data: 'Assigned_Hour_Scan', name: 'Assigned_Hour_Scan' },
+                    { data: 'Production_No_Plan', name: 'Production_No_Plan' },
+                    { data: 'Production_Date_Plan', name: 'Production_Date_Plan' },
+                    { data: 'Time_Scan', name: 'Time_Scan' },
+                    { data: 'Chasis_No_Plan', name: 'Chasis_No_Plan' },
+                    { data: 'Model_Label_Plan', name: 'Model_Label_Plan' },
+                    { data: 'Safety_Frame_Label_Plan', name: 'Safety_Frame_Label_Plan' },
+                    { data: 'Model_Mower_Plan', name: 'Model_Mower_Plan' },
+                    { data: 'Mower_No_Plan', name: 'Mower_No_Plan' },
+                    { data: 'Model_Collector_Plan', name: 'Model_Collector_Plan' },
+                    { data: 'Collector_No_Plan', name: 'Collector_No_Plan' }
+                ]
+            });
+        }
+
+        function updateTractorTypes(areaId, data) {
+            var typeCount = {};
+
+            var scanDate = $('#scan_date_' + areaId).val();
+
+            // Format tanggal ke format Indonesia
+            var dateObj = new Date(scanDate + 'T00:00:00');
+            var options = { year: 'numeric', month: 'long', day: 'numeric' };
+            var formattedDate = dateObj.toLocaleDateString('en-GB', options);
+            var formattedDateId = dateObj.toLocaleDateString('id-ID', options);
+
+            // Update tanggal di card
+            $('#tractorTypeDate_' + areaId).html(formattedDateId);
+            $('#totalScanDate_' + areaId).html(formattedDate);
+            
+            // Hitung tipe dari data
+            data.forEach(function(row) {
+                var type = row.Type_Plan;
+                if (type) {
+                    typeCount[type] = (typeCount[type] || 0) + 1;
                 }
             });
+
+            // Build HTML untuk tractor types card
+            var html = '';
+            if (Object.keys(typeCount).length > 0) {
+                Object.keys(typeCount).sort().forEach(function(type) {
+                    var bgColor = validTypes.includes(type) ? (typeColors[type] || '#D3D3D3') : '#D3D3D3';
+                    html += '<div class="tractor-type-card col-lg-6 mb-2">';
+                    html += '<div class="row">';
+                    html += '<div class="col-lg-5">';
+                    html += '<img src="{{ asset("assets/img/tractors") }}/' + type + '.png" alt="' + type + '" class="img-fluid">';
+                    html += '</div>';
+                    html += '<div class="col-lg-7">';
+                    html += '<span class="badge tractor-type-badge" style="background-color: ' + bgColor + '; color: black;">' + type + '</span>';
+                    html += '<div class="tractor-type-count">' + typeCount[type] + '</div>';
+                    html += '</div>';
+                    html += '</div>';
+                    html += '</div>';
+                });
+            } else {
+                html = '<p class="text-muted text-center">Belum ada scan untuk tanggal ini.</p>';
+            }
+
+            $('#tractorTypesContainer_' + areaId).html(html);
+        }
+
+        // Apply date filter
+        $('.apply-date-btn').on('click', function() {
+            var areaId = $(this).data('area-id');
+            tables[areaId].draw();
         });
 
+        // Export Excel
+        $('.export-btn').on('click', function(e) {
+            e.preventDefault();
+            var areaId = $(this).data('area-id');
+            var scanDate = $('#scan_date_' + areaId).val();
+            window.location.href = "{{ route('report.export') }}" + 
+                '?area_id=' + areaId + 
+                '&scan_date=' + scanDate;
+        });
+    });
     </script>
 </body>
 

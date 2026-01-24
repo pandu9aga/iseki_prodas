@@ -470,8 +470,64 @@ class ReportController extends Controller
     public function getAreaReports(Request $request)
     {
         $areaId = $request->input('area_id');
+        
+        // Cek apakah area yang dipilih adalah MAIN LINE
+        $area = Efficiency_Area::find($areaId);
+        
+        if ($area && $area->Name_Area === 'MAIN LINE') {
+            // Gunakan logika MAIN LINE dari AreaController
+            $query = Plan::select([
+                'Id_Plan',
+                'Type_Plan',
+                'Sequence_No_Plan',
+                'Production_Date_Plan',
+                'Model_Name_Plan',
+                'Production_No_Plan',
+                'Chasis_No_Plan',
+                'Model_Label_Plan',
+                'Safety_Frame_Label_Plan',
+                'Model_Mower_Plan',
+                'Mower_No_Plan',
+                'Model_Collector_Plan',
+                'Collector_No_Plan',
+                'Lineoff_Plan'
+            ])
+            ->whereNotNull('Lineoff_Plan');
 
-        // Subquery dari tabel plans (default connection)
+            // Filter berdasarkan tanggal lineoff
+            if ($request->filled('scan_date')) {
+                $query->whereDate('Lineoff_Plan', $request->scan_date);
+            } else {
+                $query->whereDate('Lineoff_Plan', Carbon::today()->toDateString());
+            }
+
+            $query->orderBy('Lineoff_Plan', 'desc');
+
+            $results = $query->get();
+
+            // Tambahkan Assigned_Hour_Scan dari Efficiency_Scan
+            $results = $results->map(function($plan) use ($areaId) {
+                $scan = Efficiency_Scan::where(
+                    DB::connection('efficiency')->raw('LPAD(Sequence_No_Plan, 5, "0")'),
+                    '=',
+                    str_pad($plan->Sequence_No_Plan, 5, '0', STR_PAD_LEFT)
+                )
+                ->where('Production_Date_Plan', $plan->Production_Date_Plan)
+                ->where('Id_Area', $areaId)
+                ->orderBy('Time_Scan', 'desc')
+                ->first();
+
+                $plan->Assigned_Hour_Scan = $scan ? $scan->Assigned_Hour_Scan : '-';
+                $plan->Time_Scan = $plan->Lineoff_Plan; // Untuk konsistensi dengan area lain
+                return $plan;
+            });
+
+            return DataTables::of($results)
+                ->addIndexColumn()
+                ->make(true);
+        }
+
+        // Logika area biasa (selain MAIN LINE)
         $plansSubquery = Plan::select(
             'Sequence_No_Plan',
             'Production_Date_Plan',
@@ -489,7 +545,6 @@ class ReportController extends Controller
             'Lineoff_Plan'
         );
 
-        // Query dari Efficiency_Scan dengan grouping berdasarkan Sequence_No_Plan dan Production_Date_Plan
         $query = Efficiency_Scan::select(
             'scans.Sequence_No_Plan',
             'scans.Production_Date_Plan',
@@ -534,7 +589,6 @@ class ReportController extends Controller
             'plans.Lineoff_Plan'
         );
 
-        // Filter berdasarkan tanggal scan
         if ($request->filled('scan_date')) {
             $query->whereDate('scans.Time_Scan', $request->scan_date);
         } else {
@@ -559,79 +613,104 @@ class ReportController extends Controller
             return redirect()->back()->with('error', 'Area tidak ditemukan');
         }
 
-        // Subquery dari tabel plans (default connection)
-        $plansSubquery = Plan::select(
-            'Sequence_No_Plan',
-            'Production_Date_Plan',
-            'Id_Plan',
-            'Type_Plan',
-            'Model_Name_Plan',
-            'Production_No_Plan',
-            'Chasis_No_Plan',
-            'Model_Label_Plan',
-            'Safety_Frame_Label_Plan',
-            'Model_Mower_Plan',
-            'Mower_No_Plan',
-            'Model_Collector_Plan',
-            'Collector_No_Plan',
-            'Lineoff_Plan'
-        );
+        // Cek apakah area adalah MAIN LINE
+        if ($area->Name_Area === 'MAIN LINE') {
+            // Gunakan logika export MAIN LINE
+            $endDate = $selectedDate->copy()->endOfDay();
 
-        // Query dari Efficiency_Scan dengan grouping berdasarkan Sequence_No_Plan dan Production_Date_Plan
-        $query = Efficiency_Scan::select(
-            'scans.Sequence_No_Plan',
-            'scans.Production_Date_Plan',
-            DB::raw('MAX(scans.Time_Scan) as Time_Scan'),
-            DB::raw('SUM(scans.Assigned_Hour_Scan) as Assigned_Hour_Scan'),
-            'plans.Id_Plan',
-            'plans.Type_Plan',
-            'plans.Model_Name_Plan',
-            'plans.Production_No_Plan',
-            'plans.Chasis_No_Plan',
-            'plans.Model_Label_Plan',
-            'plans.Safety_Frame_Label_Plan',
-            'plans.Model_Mower_Plan',
-            'plans.Mower_No_Plan',
-            'plans.Model_Collector_Plan',
-            'plans.Collector_No_Plan',
-            'plans.Lineoff_Plan'
-        )
-        ->leftJoinSub(
-            $plansSubquery,
-            'plans',
-            function($join) {
-                $join->on('scans.Sequence_No_Plan', '=', 'plans.Sequence_No_Plan')
-                    ->on('scans.Production_Date_Plan', '=', 'plans.Production_Date_Plan');
-            }
-        )
-        ->where('scans.Id_Area', $areaId)
-        ->groupBy(
-            'scans.Sequence_No_Plan',
-            'scans.Production_Date_Plan',
-            'plans.Id_Plan',
-            'plans.Type_Plan',
-            'plans.Model_Name_Plan',
-            'plans.Production_No_Plan',
-            'plans.Chasis_No_Plan',
-            'plans.Model_Label_Plan',
-            'plans.Safety_Frame_Label_Plan',
-            'plans.Model_Mower_Plan',
-            'plans.Mower_No_Plan',
-            'plans.Model_Collector_Plan',
-            'plans.Collector_No_Plan',
-            'plans.Lineoff_Plan'
-        );
-
-        // Filter berdasarkan tanggal scan
-        if ($request->filled('scan_date')) {
-            $query->whereDate('scans.Time_Scan', $request->scan_date);
+            $plans = Plan::select([
+                'Type_Plan',
+                'Sequence_No_Plan',
+                'Production_Date_Plan',
+                'Model_Name_Plan',
+                'Production_No_Plan',
+                'Chasis_No_Plan',
+                'Model_Label_Plan',
+                'Safety_Frame_Label_Plan',
+                'Model_Mower_Plan',
+                'Mower_No_Plan',
+                'Model_Collector_Plan',
+                'Collector_No_Plan',
+                'Lineoff_Plan'
+            ])
+            ->whereNotNull('Lineoff_Plan')
+            ->whereBetween('Lineoff_Plan', [$selectedDate, $endDate])
+            ->orderBy('Lineoff_Plan', 'asc')
+            ->get();
         } else {
-            $query->whereDate('scans.Time_Scan', Carbon::today()->toDateString());
+            // Logika export area biasa
+            $plansSubquery = Plan::select(
+                'Sequence_No_Plan',
+                'Production_Date_Plan',
+                'Id_Plan',
+                'Type_Plan',
+                'Model_Name_Plan',
+                'Production_No_Plan',
+                'Chasis_No_Plan',
+                'Model_Label_Plan',
+                'Safety_Frame_Label_Plan',
+                'Model_Mower_Plan',
+                'Mower_No_Plan',
+                'Model_Collector_Plan',
+                'Collector_No_Plan',
+                'Lineoff_Plan'
+            );
+
+            $query = Efficiency_Scan::select(
+                'scans.Sequence_No_Plan',
+                'scans.Production_Date_Plan',
+                DB::raw('MAX(scans.Time_Scan) as Time_Scan'),
+                DB::raw('SUM(scans.Assigned_Hour_Scan) as Assigned_Hour_Scan'),
+                'plans.Id_Plan',
+                'plans.Type_Plan',
+                'plans.Model_Name_Plan',
+                'plans.Production_No_Plan',
+                'plans.Chasis_No_Plan',
+                'plans.Model_Label_Plan',
+                'plans.Safety_Frame_Label_Plan',
+                'plans.Model_Mower_Plan',
+                'plans.Mower_No_Plan',
+                'plans.Model_Collector_Plan',
+                'plans.Collector_No_Plan',
+                'plans.Lineoff_Plan'
+            )
+            ->leftJoinSub(
+                $plansSubquery,
+                'plans',
+                function($join) {
+                    $join->on('scans.Sequence_No_Plan', '=', 'plans.Sequence_No_Plan')
+                        ->on('scans.Production_Date_Plan', '=', 'plans.Production_Date_Plan');
+                }
+            )
+            ->where('scans.Id_Area', $areaId)
+            ->groupBy(
+                'scans.Sequence_No_Plan',
+                'scans.Production_Date_Plan',
+                'plans.Id_Plan',
+                'plans.Type_Plan',
+                'plans.Model_Name_Plan',
+                'plans.Production_No_Plan',
+                'plans.Chasis_No_Plan',
+                'plans.Model_Label_Plan',
+                'plans.Safety_Frame_Label_Plan',
+                'plans.Model_Mower_Plan',
+                'plans.Mower_No_Plan',
+                'plans.Model_Collector_Plan',
+                'plans.Collector_No_Plan',
+                'plans.Lineoff_Plan'
+            );
+
+            if ($request->filled('scan_date')) {
+                $query->whereDate('scans.Time_Scan', $request->scan_date);
+            } else {
+                $query->whereDate('scans.Time_Scan', Carbon::today()->toDateString());
+            }
+
+            $query->orderBy('Time_Scan', 'desc');
+
+            $plans = $query->get();
         }
 
-        $query->orderBy('Time_Scan', 'desc');
-
-        $plans = $query->get();
         $totalPlans = $plans->count();
 
         $typeCounts = $plans->groupBy('Type_Plan')->map(function ($group) {
@@ -675,76 +754,139 @@ class ReportController extends Controller
         $currentRow += 2;
 
         // 4. Header Tabel Data - Baris ke-5 (Pink Header)
-        $headers = [
-            'No', 'Sequence No', 'Model Name', 'Type', 'Hour', 'Production No', 'Production Date', 'Scan', 'Chasis No',
-            'Model Label', 'Safety Frame Label', 'Model Mower', 'Mower No', 'Model Collector', 'Collector No'
-        ];
+        // Untuk MAIN LINE, tidak ada kolom Hour
+        if ($area->Name_Area === 'MAIN LINE') {
+            $headers = [
+                'No', 'Sequence No', 'Model Name', 'Type', 'Production No', 'Production Date', 'Scan', 'Chasis No',
+                'Model Label', 'Safety Frame Label', 'Model Mower', 'Mower No', 'Model Collector', 'Collector No'
+            ];
+        } else {
+            $headers = [
+                'No', 'Sequence No', 'Model Name', 'Type', 'Hour', 'Production No', 'Production Date', 'Scan', 'Chasis No',
+                'Model Label', 'Safety Frame Label', 'Model Mower', 'Mower No', 'Model Collector', 'Collector No'
+            ];
+        }
+        
         $colIndex = 'A';
         foreach ($headers as $header) {
             $sheet->setCellValue($colIndex . $currentRow, $header);
             $colIndex++;
         }
         $tableHeaderRow = $currentRow;
-        $this->applyPinkHeaderStyle($sheet, 'A' . $tableHeaderRow . ':O' . $tableHeaderRow);
+        $lastHeaderCol = chr(ord('A') + count($headers) - 1);
+        $this->applyPinkHeaderStyle($sheet, 'A' . $tableHeaderRow . ':' . $lastHeaderCol . $tableHeaderRow);
         $currentRow++;
 
         // 5. Isi Data Tabel
         $no = 1;
         foreach ($plans as $plan) {
             $colIndex = 'A';
-            $sheet->setCellValue($colIndex . $currentRow, $no); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('center'); $colIndex++;
-            $sheet->setCellValue($colIndex . $currentRow, $plan->Sequence_No_Plan); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
-            $sheet->setCellValue($colIndex . $currentRow, $plan->Model_Name_Plan); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
-            $sheet->setCellValue($colIndex . $currentRow, $plan->Type_Plan); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
-            $sheet->setCellValue($colIndex . $currentRow, $plan->Assigned_Hour_Scan); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
-            $sheet->setCellValue($colIndex . $currentRow, $plan->Production_No_Plan); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
-            $sheet->setCellValue($colIndex . $currentRow, $plan->Production_Date_Plan); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
-            $sheet->setCellValue($colIndex . $currentRow, $plan->Time_Scan); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
-            $sheet->setCellValue($colIndex . $currentRow, $plan->Chasis_No_Plan); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
-            $sheet->setCellValue($colIndex . $currentRow, $plan->Model_Label_Plan); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
-            $sheet->setCellValue($colIndex . $currentRow, $plan->Safety_Frame_Label_Plan); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
-            $sheet->setCellValue($colIndex . $currentRow, $plan->Model_Mower_Plan); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
-            $sheet->setCellValue($colIndex . $currentRow, $plan->Mower_No_Plan); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
-            $sheet->setCellValue($colIndex . $currentRow, $plan->Model_Collector_Plan); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
-            $sheet->setCellValue($colIndex . $currentRow, $plan->Collector_No_Plan); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
+            $sheet->setCellValue($colIndex . $currentRow, $no); 
+            $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('center'); 
+            $colIndex++;
+            
+            $sheet->setCellValue($colIndex . $currentRow, $plan->Sequence_No_Plan); 
+            $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); 
+            $colIndex++;
+            
+            $sheet->setCellValue($colIndex . $currentRow, $plan->Model_Name_Plan); 
+            $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); 
+            $colIndex++;
+            
+            $sheet->setCellValue($colIndex . $currentRow, $plan->Type_Plan); 
+            $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); 
+            $colIndex++;
+            
+            // Hanya tampilkan Hour jika bukan MAIN LINE
+            if ($area->Name_Area !== 'MAIN LINE') {
+                $sheet->setCellValue($colIndex . $currentRow, $plan->Assigned_Hour_Scan ?? '-'); 
+                $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); 
+                $colIndex++;
+            }
+            
+            $sheet->setCellValue($colIndex . $currentRow, $plan->Production_No_Plan); 
+            $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); 
+            $colIndex++;
+            
+            $sheet->setCellValue($colIndex . $currentRow, $plan->Production_Date_Plan); 
+            $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); 
+            $colIndex++;
+            
+            // Untuk MAIN LINE gunakan Lineoff_Plan, untuk area lain gunakan Time_Scan
+            $scanTime = ($area->Name_Area === 'MAIN LINE') ? $plan->Lineoff_Plan : ($plan->Time_Scan ?? '-');
+            $sheet->setCellValue($colIndex . $currentRow, $scanTime); 
+            $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); 
+            $colIndex++;
+            
+            $sheet->setCellValue($colIndex . $currentRow, $plan->Chasis_No_Plan); 
+            $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); 
+            $colIndex++;
+            
+            $sheet->setCellValue($colIndex . $currentRow, $plan->Model_Label_Plan); 
+            $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); 
+            $colIndex++;
+            
+            $sheet->setCellValue($colIndex . $currentRow, $plan->Safety_Frame_Label_Plan); 
+            $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); 
+            $colIndex++;
+            
+            $sheet->setCellValue($colIndex . $currentRow, $plan->Model_Mower_Plan); 
+            $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); 
+            $colIndex++;
+            
+            $sheet->setCellValue($colIndex . $currentRow, $plan->Mower_No_Plan); 
+            $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); 
+            $colIndex++;
+            
+            $sheet->setCellValue($colIndex . $currentRow, $plan->Model_Collector_Plan); 
+            $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); 
+            $colIndex++;
+            
+            $sheet->setCellValue($colIndex . $currentRow, $plan->Collector_No_Plan); 
+            $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); 
+            $colIndex++;
+            
             $no++;
             $currentRow++;
         }
         $lastDataRow = $currentRow - 1;
 
         // --- STYLING TABEL DATA ---
-        $this->applyTableBorder($sheet, 'A' . $tableHeaderRow . ':O' . $lastDataRow);
-        $sheet->setAutoFilter('A' . $tableHeaderRow . ':O' . $lastDataRow);
+        $this->applyTableBorder($sheet, 'A' . $tableHeaderRow . ':' . $lastHeaderCol . $lastDataRow);
+        $sheet->setAutoFilter('A' . $tableHeaderRow . ':' . $lastHeaderCol . $lastDataRow);
 
-        foreach (range('A', 'O') as $col) {
+        foreach (range('A', $lastHeaderCol) as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
         // --- AKHIR STYLING TABEL DATA ---
 
-        // 6. Kolom P: Header Rekap Tipe
+        // 6. Kolom Rekap: Header Rekap Tipe
         $rekapHeaderRow = 5;
-        $sheet->setCellValue('Q' . $rekapHeaderRow, 'Type:');
-        $this->applyPinkHeaderStyle($sheet, 'Q' . $rekapHeaderRow . ':R' . $rekapHeaderRow);
+        $rekapStartCol = chr(ord($lastHeaderCol) + 2); // 2 kolom setelah tabel data
+        $rekapEndCol = chr(ord($rekapStartCol) + 1);
+        
+        $sheet->setCellValue($rekapStartCol . $rekapHeaderRow, 'Type:');
+        $this->applyPinkHeaderStyle($sheet, $rekapStartCol . $rekapHeaderRow . ':' . $rekapEndCol . $rekapHeaderRow);
 
-        // 7. Kolom Q & R: Isi Rekap Tipe & Jumlah
+        // 7. Isi Rekap Tipe & Jumlah
         $currentRekapRow = $rekapHeaderRow + 1;
         foreach ($sortedTypeCounts as $type => $count) {
-            $sheet->setCellValue('Q' . $currentRekapRow, $type);
-            $sheet->setCellValue('R' . $currentRekapRow, $count);
+            $sheet->setCellValue($rekapStartCol . $currentRekapRow, $type);
+            $sheet->setCellValue($rekapEndCol . $currentRekapRow, $count);
             $currentRekapRow++;
         }
 
         // --- STYLING REKAP TIPE ---
-        $this->applyTableBorder($sheet, 'Q' . ($rekapHeaderRow + 1) . ':R' . ($currentRekapRow - 1));
+        $this->applyTableBorder($sheet, $rekapStartCol . ($rekapHeaderRow + 1) . ':' . $rekapEndCol . ($currentRekapRow - 1));
 
-        $sheet->setCellValue('Q' . $currentRekapRow, 'Total Keseluruhan:');
-        $sheet->setCellValue('R' . $currentRekapRow, $totalPlans);
-        $style = $sheet->getStyle('Q' . $currentRekapRow . ':R' . $currentRekapRow);
+        $sheet->setCellValue($rekapStartCol . $currentRekapRow, 'Total Keseluruhan:');
+        $sheet->setCellValue($rekapEndCol . $currentRekapRow, $totalPlans);
+        $style = $sheet->getStyle($rekapStartCol . $currentRekapRow . ':' . $rekapEndCol . $currentRekapRow);
         $style->getFont()->setBold(true);
         $style->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('FFC0CB');
         $style->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
 
-        foreach (range('Q', 'R') as $col) {
+        foreach ([$rekapStartCol, $rekapEndCol] as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
         // --- AKHIR STYLING REKAP TIPE ---

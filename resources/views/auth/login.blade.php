@@ -69,11 +69,11 @@
         </div>
 
         <ul class="navbar-nav flex-row align-items-center ms-auto d-none d-xl-flex">
-          <li class="nav-item">
+          {{-- <li class="nav-item">
             <a class="nav-link" href="{{ route('scan') }}">
               <button class="btn btn-outline-secondary me-2">Scan</button>
             </a>
-          </li>
+          </li> --}}
           <li class="nav-item">
             <a class="nav-link" href="{{ route('lineoff') }}">
               <button class="btn btn-outline-secondary me-2">Lineoff</button>
@@ -97,7 +97,7 @@
               <i class="bx bx-dots-vertical-rounded bx-sm"></i>
             </a>
             <ul class="dropdown-menu dropdown-menu-end">
-              <li><a class="dropdown-item" href="{{ route('scan') }}"><i class="bx bx-qr me-2"></i> Scan</a></li>
+              {{-- <li><a class="dropdown-item" href="{{ route('scan') }}"><i class="bx bx-qr me-2"></i> Scan</a></li> --}}
               <li><a class="dropdown-item" href="{{ route('lineoff') }}"><i class="bx bx-stop-circle me-2"></i> Lineoff</a></li>
               <li><a class="dropdown-item" href="{{ route('report') }}"><i class="bx bx-file me-2"></i> Report</a></li>
               <li><hr class="dropdown-divider"></li>
