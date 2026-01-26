@@ -586,7 +586,7 @@
 					// Fokus otomatis ke Scan 2
 					setTimeout(() => {
 						rawInput2.focus();
-					}, 2000);
+					}, 500);
 
 				} else {
 					showValidationModal(
