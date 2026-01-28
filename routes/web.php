@@ -71,6 +71,9 @@ Route::middleware(AuthMiddleware::class)->group(function () {
     Route::get('/api/area/mainline/reports-data', [AreaController::class, 'getMainlineReports'])->name('api.area.mainline.reports.data');
     Route::post('/home/mainline/scan', [AreaController::class, 'scanMainlineStore'])->name('area.mainline.scan.store');
     Route::get('/area/mainline/report/export', [AreaController::class, 'exportMainlineReport'])->name('area.mainline.report.export');
+    Route::get('/api/area/daiichi/reports-data', [AreaController::class, 'getDaiichiReports'])->name('api.area.daiichi.reports.data');
+    Route::post('/home/daiichi/scan', [AreaController::class, 'scanDaiichiStore'])->name('area.daiichi.scan.store');
+    Route::get('/area/daiichi/report/export', [AreaController::class, 'exportDaiichiReport'])->name('area.daiichi.report.export');
 });
 
 Route::get('/debug-auth', function () {

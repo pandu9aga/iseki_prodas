@@ -24,9 +24,19 @@ class AreaController extends Controller
         $areaName = session('Name_Area');
         $areaId = session('Id_Area');
 
+        // Jika area adalah DAIICHI, tampilkan view daiichi
+        if ($areaName === 'DAIICHI') {
+            $selectedDate = $request->query('scan_date', Carbon::today()->toDateString());
+
+            $scanCount = Plan::whereNotNull('Daiichi_Record')
+                            ->whereDate('Daiichi_Record', $selectedDate)
+                            ->count();
+
+            return view('areas.daiichi', compact('selectedDate', 'scanCount'));
+        }
+
         // Jika area adalah Main Line, tampilkan view mainline
         if ($areaName === 'MAIN LINE') {
-            // Ambil tanggal dari query string, default ke hari ini
             $selectedDate = $request->query('lineoff_date', Carbon::today()->toDateString());
 
             $baseQuery = Plan::whereNotNull('Lineoff_Plan')
@@ -34,7 +44,6 @@ class AreaController extends Controller
 
             $totalTractors = $baseQuery->count();
 
-            // Ambil tipe dan hitung jumlahnya per tipe untuk tanggal yang dipilih
             $typesWithCount = $baseQuery->select('Type_Plan', DB::raw('COUNT(*) as count'))
                                         ->groupBy('Type_Plan')
                                         ->orderBy('Type_Plan')
@@ -48,10 +57,8 @@ class AreaController extends Controller
             return redirect()->route('login')->withErrors('Area ID tidak ditemukan dalam session');
         }
 
-        // Ambil tanggal dari query string, default ke hari ini
         $selectedDate = $request->query('scan_date', Carbon::today()->toDateString());
 
-        // Hitung scan yang di-group berdasarkan Sequence_No_Plan dan Production_Date_Plan
         $scanCount = Efficiency_Scan::where('Id_Area', $areaId)
                                     ->whereDate('Time_Scan', $selectedDate)
                                     ->select('Sequence_No_Plan', 'Production_Date_Plan')
@@ -867,6 +874,262 @@ class AreaController extends Controller
 
         // --- OUTPUT KE BROWSER ---
         $fileName = 'Report_' . session('Name_Area') . '_' . $selectedDate->format('Y-m-d') . '.xlsx';
+
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $fileName . '"');
+        header('Cache-Control: max-age=0');
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
+
+        $writer = new Xlsx($spreadsheet);
+        $writer->save('php://output');
+
+        exit();
+    }
+
+    public function getDaiichiReports(Request $request)
+    {
+        // Jika ada parameter search_only, lakukan pencarian plan
+        if ($request->filled('search_only') && $request->search_only == 'true') {
+            // Format sequence_no: jika tidak mengandung huruf T, pad ke 5 digit
+            $sequenceNo = $request->sequence_no;
+            $sequenceNoFormatted = (stripos($sequenceNo, 'T') === false) 
+                ? str_pad($sequenceNo, 5, '0', STR_PAD_LEFT)
+                : $sequenceNo;
+            
+            $plan = Plan::where('Sequence_No_Plan', $sequenceNoFormatted)
+                        ->where('Production_Date_Plan', $request->production_date)
+                        ->first();
+            
+            if ($plan) {
+                return response()->json([
+                    'data' => [$plan]
+                ]);
+            } else {
+                return response()->json([
+                    'data' => []
+                ]);
+            }
+        }
+
+        // Query normal untuk DataTables
+        $query = Plan::select([
+            'Id_Plan',
+            'Type_Plan',
+            'Sequence_No_Plan',
+            'Production_Date_Plan',
+            'Model_Name_Plan',
+            'Production_No_Plan',
+            'Chasis_No_Plan',
+            'Model_Label_Plan',
+            'Safety_Frame_Label_Plan',
+            'Model_Mower_Plan',
+            'Mower_No_Plan',
+            'Model_Collector_Plan',
+            'Collector_No_Plan',
+            'Daiichi_Record'
+        ])
+        ->whereNotNull('Daiichi_Record');
+
+        if ($request->filled('scan_date')) {
+            $query->whereDate('Daiichi_Record', $request->scan_date);
+        } else {
+            $query->whereDate('Daiichi_Record', Carbon::today()->toDateString());
+        }
+
+        $query->orderBy('Daiichi_Record', 'desc');
+
+        return DataTables::of($query)
+            ->addIndexColumn()
+            ->make(true);
+    }
+
+    public function scanDaiichiStore(Request $request)
+    {
+        $request->validate([
+            'sequence_no' => 'required|string',
+            'production_date' => 'required|string',
+        ]);
+
+        $sequenceNo = $request->input('sequence_no');
+        $productionDate = $request->input('production_date');
+        
+        // Format sequence_no: jika tidak mengandung huruf T, pad ke 5 digit
+        $sequenceNoFormatted = (stripos($sequenceNo, 'T') === false) 
+            ? str_pad($sequenceNo, 5, '0', STR_PAD_LEFT)
+            : $sequenceNo;
+        
+        $timestampNow = Carbon::now();
+
+        try {
+            // Cari Plan berdasarkan Sequence_No_Plan dan Production_Date_Plan
+            $plan = Plan::where('Sequence_No_Plan', $sequenceNoFormatted)
+                        ->where('Production_Date_Plan', $productionDate)
+                        ->first();
+
+            if (!$plan) {
+                return redirect()->back()->with('error', 
+                    "Plan dengan Sequence No {$sequenceNoFormatted} dan Production Date {$productionDate} tidak ditemukan.");
+            }
+
+            // Update Daiichi_Record
+            $plan->Daiichi_Record = $timestampNow;
+            $plan->save();
+
+            return redirect()->route('home')->with('success', 
+                "Scan DAIICHI berhasil untuk Seq: {$sequenceNoFormatted} - Date: {$productionDate}");
+
+        } catch (\Exception $e) {
+            \Log::error('Gagal memproses scanDaiichiStore: ' . $e->getMessage(), ['exception' => $e]);
+            return redirect()->back()->with('error', 'Gagal memproses scan: ' . $e->getMessage());
+        }
+    }
+
+    public function exportDaiichiReport(Request $request)
+    {
+        $request->validate([
+            'scan_date' => 'required|date_format:Y-m-d',
+        ]);
+
+        $selectedDate = Carbon::parse($request->query('scan_date'))->startOfDay();
+        $endDate = $selectedDate->copy()->endOfDay();
+
+        $plans = Plan::select([
+            'Type_Plan',
+            'Sequence_No_Plan',
+            'Production_Date_Plan',
+            'Model_Name_Plan',
+            'Production_No_Plan',
+            'Chasis_No_Plan',
+            'Model_Label_Plan',
+            'Safety_Frame_Label_Plan',
+            'Model_Mower_Plan',
+            'Mower_No_Plan',
+            'Model_Collector_Plan',
+            'Collector_No_Plan',
+            'Daiichi_Record'
+        ])
+        ->whereNotNull('Daiichi_Record')
+        ->whereBetween('Daiichi_Record', [$selectedDate, $endDate])
+        ->orderBy('Daiichi_Record', 'asc')
+        ->get();
+
+        $totalPlans = $plans->count();
+
+        $typeCounts = $plans->groupBy('Type_Plan')->map(function ($group) {
+            return $group->count();
+        });
+        $sortedTypeCounts = $typeCounts->toArray();
+        ksort($sortedTypeCounts);
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        $currentRow = 2;
+
+        // 0. Judul Area
+        $sheet->setCellValue('B' . $currentRow, 'Area Scan:');
+        $sheet->setCellValue('C' . $currentRow, 'DAIICHI');
+        $this->applyPinkCellStyle($sheet, 'B' . $currentRow . ':C' . $currentRow);
+        $this->applyTableBorder($sheet, 'B' . $currentRow . ':C' . $currentRow);
+        $currentRow++;
+
+        // 1. Judul Tanggal
+        $sheet->setCellValue('B' . $currentRow, 'Tanggal Scan:');
+        $sheet->setCellValue('C' . $currentRow, $selectedDate->format('d F Y'));
+        $this->applyPinkCellStyle($sheet, 'B' . $currentRow . ':C' . $currentRow);
+        $this->applyTableBorder($sheet, 'B' . $currentRow . ':C' . $currentRow);
+        $currentRow++;
+
+        // 2. Update Data Per
+        $sheet->setCellValue('B' . $currentRow, 'Update Data Per:');
+        $sheet->setCellValue('C' . $currentRow, Carbon::now()->format('d F Y H:i:s'));
+        $this->applyTableBorder($sheet, 'B' . $currentRow . ':C' . $currentRow);
+        $currentRow++;
+
+        // 3. Total Keseluruhan Data
+        $sheet->setCellValue('B' . $currentRow, 'Total Keseluruhan Data:');
+        $sheet->setCellValue('C' . $currentRow, $totalPlans);
+        $style = $sheet->getStyle('C' . $currentRow);
+        $style->getFont()->setSize(14)->setBold(true);
+        $this->applyTableBorder($sheet, 'B' . $currentRow . ':C' . $currentRow);
+        $currentRow += 2;
+
+        // 4. Header Tabel Data
+        $headers = [
+            'No', 'Sequence No', 'Model Name', 'Type', 'Production No', 'Production Date', 'Scan', 'Chasis No',
+            'Model Label', 'Safety Frame Label', 'Model Mower', 'Mower No', 'Model Collector', 'Collector No'
+        ];
+        $colIndex = 'A';
+        foreach ($headers as $header) {
+            $sheet->setCellValue($colIndex . $currentRow, $header);
+            $colIndex++;
+        }
+        $tableHeaderRow = $currentRow;
+        $this->applyPinkHeaderStyle($sheet, 'A' . $tableHeaderRow . ':N' . $tableHeaderRow);
+        $currentRow++;
+
+        // 5. Isi Data Tabel
+        $no = 1;
+        foreach ($plans as $plan) {
+            $colIndex = 'A';
+            $sheet->setCellValue($colIndex . $currentRow, $no); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('center'); $colIndex++;
+            $sheet->setCellValue($colIndex . $currentRow, $plan->Sequence_No_Plan); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
+            $sheet->setCellValue($colIndex . $currentRow, $plan->Model_Name_Plan); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
+            $sheet->setCellValue($colIndex . $currentRow, $plan->Type_Plan); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
+            $sheet->setCellValue($colIndex . $currentRow, $plan->Production_No_Plan); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
+            $sheet->setCellValue($colIndex . $currentRow, $plan->Production_Date_Plan); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
+            $sheet->setCellValue($colIndex . $currentRow, $plan->Daiichi_Record); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
+            $sheet->setCellValue($colIndex . $currentRow, $plan->Chasis_No_Plan); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
+            $sheet->setCellValue($colIndex . $currentRow, $plan->Model_Label_Plan); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
+            $sheet->setCellValue($colIndex . $currentRow, $plan->Safety_Frame_Label_Plan); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
+            $sheet->setCellValue($colIndex . $currentRow, $plan->Model_Mower_Plan); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
+            $sheet->setCellValue($colIndex . $currentRow, $plan->Mower_No_Plan); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
+            $sheet->setCellValue($colIndex . $currentRow, $plan->Model_Collector_Plan); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
+            $sheet->setCellValue($colIndex . $currentRow, $plan->Collector_No_Plan); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
+            $no++;
+            $currentRow++;
+        }
+        $lastDataRow = $currentRow - 1;
+
+        // Styling Tabel Data
+        $this->applyTableBorder($sheet, 'A' . $tableHeaderRow . ':N' . $lastDataRow);
+        $sheet->setAutoFilter('A' . $tableHeaderRow . ':N' . $lastDataRow);
+
+        foreach (range('A', 'N') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // 6. Header Rekap Tipe
+        $rekapHeaderRow = 5;
+        $sheet->setCellValue('P' . $rekapHeaderRow, 'Type:');
+        $this->applyPinkHeaderStyle($sheet, 'P' . $rekapHeaderRow . ':Q' . $rekapHeaderRow);
+
+        // 7. Isi Rekap Tipe & Jumlah
+        $currentRekapRow = $rekapHeaderRow + 1;
+        foreach ($sortedTypeCounts as $type => $count) {
+            $sheet->setCellValue('P' . $currentRekapRow, $type);
+            $sheet->setCellValue('Q' . $currentRekapRow, $count);
+            $currentRekapRow++;
+        }
+
+        // Styling Rekap Tipe
+        $this->applyTableBorder($sheet, 'P' . ($rekapHeaderRow + 1) . ':Q' . ($currentRekapRow - 1));
+
+        $sheet->setCellValue('P' . $currentRekapRow, 'Total Keseluruhan:');
+        $sheet->setCellValue('Q' . $currentRekapRow, $totalPlans);
+        $style = $sheet->getStyle('P' . $currentRekapRow . ':Q' . $currentRekapRow);
+        $style->getFont()->setBold(true);
+        $style->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('FFC0CB');
+        $style->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+
+        foreach (range('P', 'Q') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // Output ke Browser
+        $fileName = 'Report_DAIICHI_' . $selectedDate->format('Y-m-d') . '.xlsx';
 
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment;filename="' . $fileName . '"');

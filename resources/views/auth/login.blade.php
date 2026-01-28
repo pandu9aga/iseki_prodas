@@ -208,6 +208,7 @@
                         @foreach($areas as $area)
                           <option value="{{ $area->Name_Area }}">{{ $area->Name_Area }}</option>
                         @endforeach
+                        <option value="DAIICHI">DAIICHI</option>
                       </select>
                     </div>
                     <div class="mb-3 form-password-toggle">

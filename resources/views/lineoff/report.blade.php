@@ -68,17 +68,8 @@
 
             <!-- Tombol-tombol di pojok kanan hanya muncul di layar XL dan besar -->
             <ul class="navbar-nav flex-row align-items-center ms-auto d-none d-xl-flex">
-                {{-- <li class="nav-item">
-                    <a class="nav-link" href="{{ route('scan') }}">
-                        <!-- Ganti dengan route kamu -->
-                        <button class="btn btn-outline-secondary me-2">
-                            Scan
-                        </button>
-                    </a>
-                </li> --}}
                 <li class="nav-item">
                     <a class="nav-link" href="{{ route('lineoff') }}">
-                        <!-- Ganti dengan route kamu -->
                         <button class="btn btn-outline-secondary me-2">
                             Lineoff
                         </button>
@@ -86,7 +77,6 @@
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="{{ route('report') }}">
-                        <!-- Ganti dengan route kamu -->
                         <button class="btn btn-outline-secondary me-2">
                             Report
                         </button>
@@ -94,7 +84,6 @@
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="{{ route('login') }}">
-                        <!-- Ganti dengan route kamu -->
                         <button class="btn btn-outline-primary">
                             Login
                         </button>
@@ -106,11 +95,9 @@
             <ul class="navbar-nav flex-row align-items-center ms-auto d-xl-none">
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown">
-                        <i class="bx bx-dots-vertical-rounded bx-sm"></i> <!-- Ikon titik tiga -->
+                        <i class="bx bx-dots-vertical-rounded bx-sm"></i>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end">
-                        {{-- <li><a class="dropdown-item" href="{{ route('scan') }}"><i class="bx bx-qr me-2"></i> Scan</a>
-                        </li> --}}
                         <li><a class="dropdown-item" href="{{ route('lineoff') }}"><i
                                     class="bx bx-stop-circle me-2"></i> Lineoff</a></li>
                         <li><a class="dropdown-item" href="{{ route('report') }}"><i class="bx bx-file me-2"></i>
@@ -151,6 +138,19 @@
                                     </button>
                                 </li>
                             @endforeach
+                            <!-- Tab DAIICHI (Hardcoded) -->
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" 
+                                    id="area-999-tab" 
+                                    data-bs-toggle="tab" 
+                                    data-bs-target="#area-999" 
+                                    type="button" 
+                                    role="tab" 
+                                    aria-controls="area-999" 
+                                    aria-selected="false">
+                                    DAIICHI
+                                </button>
+                            </li>
                         </ul>
 
                         <h5 class="text-primary mt-4 mb-0 ms-4">Area: <span id="areaName"></span></h5>
@@ -258,6 +258,108 @@
                                     </div>
                                 </div>
                             @endforeach
+
+                            <!-- Tab Content untuk DAIICHI (Hardcoded) -->
+                            <div class="tab-pane fade" 
+                                id="area-999" 
+                                role="tabpanel" 
+                                aria-labelledby="area-999-tab">
+                                
+                                <!-- Filter, Export, dan Tractor Types Card -->
+                                <div class="row mb-3">
+                                    <!-- Kolom Kiri: Filter dan Export -->
+                                    <div class="col-md-8">
+                                        <div class="row g-3 align-items-end">
+                                            <div class="col-md-8">
+                                                <label for="scan_date_999" class="form-label">Scan Date</label>
+                                                <div class="input-group">
+                                                    <input type="date" 
+                                                        name="scan_date" 
+                                                        id="scan_date_999" 
+                                                        class="form-control scan_date_input"
+                                                        data-area-id="999"
+                                                        value="{{ Carbon\Carbon::today()->toDateString() }}">
+                                                    <button type="button" 
+                                                        class="btn btn-outline-primary apply-date-btn" 
+                                                        data-area-id="999">
+                                                        Apply
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <a href="#" 
+                                                    class="btn btn-success w-100 export-btn" 
+                                                    data-area-id="999"
+                                                    data-area-name="DAIICHI">
+                                                    <i class='bx bx-file'></i> Export Excel
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Kolom Kanan: Total Scan Card -->
+                                    <div class="col-md-4">
+                                        <div class="card text-center">
+                                            <div class="card-body">
+                                                <h5 class="mb-1">Total Scan</h5>
+                                                <h3 class="text-primary total-scan mb-2" id="total_999">0</h3>
+                                                <small class="text-muted d-block" id="totalScanDate_999">
+                                                    Tanggal: -
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Tractor Types Card dan Tabel Data -->
+                                <div class="row mb-3">
+                                    <!-- Kolom Kiri: Tractor Types Card -->
+                                    <div class="col-md-4">
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <h5 class="card-title text-primary mb-2">Tipe Traktor Terscan (<span id="tractorTypeDate_999"></span>)</h5>
+                                                <div id="tractorTypesContainer_999" class="tractor-types-container row">
+                                                    <p class="text-muted text-center">Memuat data...</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Kolom Kanan: Tabel Data -->
+                                    <div class="col-md-8">
+                                        <div class="card mb-3">
+                                            <div class="card-body">
+                                                <div class="table-responsive">
+                                                    <table id="reportsTable_999" 
+                                                        class="table table-bordered table-sm area-reports-table" 
+                                                        style="font-size: 12px;"
+                                                        data-area-id="999">
+                                                        <thead>
+                                                            <tr>
+                                                                <th class="text-primary">No</th>
+                                                                <th class="text-primary">Sequence</th>
+                                                                <th class="text-primary">Model Name</th>
+                                                                <th class="text-primary">Type</th>
+                                                                <th class="text-primary">Hour</th>
+                                                                <th class="text-primary">Production</th>
+                                                                <th class="text-primary">Date</th>
+                                                                <th class="text-primary">Time Scan</th>
+                                                                <th class="text-primary">Chasis No</th>
+                                                                <th class="text-primary">Model Label</th>
+                                                                <th class="text-primary">Safety Frame Label</th>
+                                                                <th class="text-primary">Model Mower</th>
+                                                                <th class="text-primary">Mower No</th>
+                                                                <th class="text-primary">Model Collector</th>
+                                                                <th class="text-primary">Collector No</th>
+                                                            </tr>
+                                                        </thead>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -266,7 +368,6 @@
     </div>
 
     <!-- Core JS -->
-    <!-- ... (script tags remain the same) ... -->
     <script src="{{ asset('assets/vendor/libs/jquery/jquery.js') }}"></script>
     <script src="{{ asset('assets/vendor/libs/popper/popper.js') }}"></script>
     <script src="{{ asset('assets/vendor/js/bootstrap.js') }}"></script>
@@ -290,32 +391,25 @@
             'TLEDAI': '#F6EAC2', 'TXGS': '#E7C6FF'
         };
 
-        // Inisialisasi table untuk setiap area
+        // Inisialisasi table untuk setiap area (termasuk DAIICHI dengan ID 999)
         @foreach ($areas as $area)
             tables[{{ $area->Id_Area }}] = initTable({{ $area->Id_Area }});
         @endforeach
+        tables[999] = initTable(999); // DAIICHI
 
         // --- UPDATE NAMA AREA DI HEADER ---
-        // Event listener untuk perubahan tab
         $('#areaTabs').on('shown.bs.tab', 'button[data-bs-toggle="tab"]', function (e) {
-            // Ambil ID pane dari tab yang diaktifkan
-            const activePaneId = $(e.target).attr('data-bs-target').substring(1); // Misalnya: 'area-2'
-
-            // Cari elemen tab button yang aktif untuk mengambil nama area
-            const activeTabButton = $(e.target); // Ini adalah button yang diklik
-            const areaName = activeTabButton.text().trim(); // Ambil teksnya, misalnya "Line Off"
-
-            // Update isi span dengan ID 'areaName'
+            const activeTabButton = $(e.target);
+            const areaName = activeTabButton.text().trim();
             document.getElementById('areaName').textContent = areaName;
         });
 
-        // Set nama area awal saat halaman dimuat (tab pertama aktif)
+        // Set nama area awal
         const initialActiveTab = $('#areaTabs button.nav-link.active');
         if (initialActiveTab.length) {
             const initialAreaName = initialActiveTab.text().trim();
             document.getElementById('areaName').textContent = initialAreaName;
         }
-        // --- AKHIR UPDATE NAMA AREA ---
 
         function initTable(areaId) {
             var tableId = 'reportsTable_' + areaId;
@@ -334,12 +428,8 @@
                         d.scan_date = $('#scan_date_' + areaId).val();
                     },
                     dataSrc: function(json) {
-                        // Update total scan
                         $('#total_' + areaId).text(json.recordsFiltered);
-                        
-                        // Update tractor types card
                         updateTractorTypes(areaId, json.data);
-                        
                         return json.data;
                     }
                 },
@@ -381,20 +471,16 @@
 
         function updateTractorTypes(areaId, data) {
             var typeCount = {};
-
             var scanDate = $('#scan_date_' + areaId).val();
 
-            // Format tanggal ke format Indonesia
             var dateObj = new Date(scanDate + 'T00:00:00');
             var options = { year: 'numeric', month: 'long', day: 'numeric' };
             var formattedDate = dateObj.toLocaleDateString('en-GB', options);
             var formattedDateId = dateObj.toLocaleDateString('id-ID', options);
 
-            // Update tanggal di card
             $('#tractorTypeDate_' + areaId).html(formattedDateId);
             $('#totalScanDate_' + areaId).html(formattedDate);
             
-            // Hitung tipe dari data
             data.forEach(function(row) {
                 var type = row.Type_Plan;
                 if (type) {
@@ -402,7 +488,6 @@
                 }
             });
 
-            // Build HTML untuk tractor types card
             var html = '';
             if (Object.keys(typeCount).length > 0) {
                 Object.keys(typeCount).sort().forEach(function(type) {

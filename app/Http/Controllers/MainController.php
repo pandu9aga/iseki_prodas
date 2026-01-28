@@ -72,18 +72,20 @@ class MainController extends Controller
             'Password_Area' => 'required'
         ]);
 
-        // Cari area berdasarkan nama area
+        // Cek jika login DAIICHI (hardcoded)
+        if ($request->Name_Area === 'DAIICHI' && $request->Password_Area === 'daiichi123') {
+            session(['Id_Area' => 999]); // ID khusus untuk DAIICHI
+            session(['Name_Area' => 'DAIICHI']);
+            return redirect()->route('home');
+        }
+
+        // Cari area berdasarkan nama area (untuk area lain)
         $area = Efficiency_Area::where('Name_Area', $request->Name_Area)->first();
 
         // Verifikasi password (plain text, karena kamu tidak pakai hashing)
         if ($area && $request->Password_Area === $area->Password_Area) {
-            // Hapus Auth::login($area); karena tidak bisa digunakan untuk model non-User
-            // Auth::login($area); // HAPUS BARIS INI
-
-            // Gunakan session seperti sebelumnya
             session(['Id_Area' => $area->Id_Area]);
             session(['Name_Area' => $area->Name_Area]);
-
             return redirect()->route('home');
         }
 
@@ -346,6 +348,50 @@ class MainController extends Controller
     {
         $areaId = $request->input('area_id');
         
+        // Cek apakah area yang dipilih adalah DAIICHI (hardcoded ID 999)
+        if ($areaId == 999) {
+            // Gunakan logika DAIICHI - ambil dari tabel Plan berdasarkan Daiichi_Record
+            $query = Plan::select([
+                'Id_Plan',
+                'Type_Plan',
+                'Sequence_No_Plan',
+                'Production_Date_Plan',
+                'Model_Name_Plan',
+                'Production_No_Plan',
+                'Chasis_No_Plan',
+                'Model_Label_Plan',
+                'Safety_Frame_Label_Plan',
+                'Model_Mower_Plan',
+                'Mower_No_Plan',
+                'Model_Collector_Plan',
+                'Collector_No_Plan',
+                'Daiichi_Record'
+            ])
+            ->whereNotNull('Daiichi_Record');
+
+            // Filter berdasarkan tanggal Daiichi_Record
+            if ($request->filled('scan_date')) {
+                $query->whereDate('Daiichi_Record', $request->scan_date);
+            } else {
+                $query->whereDate('Daiichi_Record', Carbon::today()->toDateString());
+            }
+
+            $query->orderBy('Daiichi_Record', 'desc');
+
+            $results = $query->get();
+
+            // Tambahkan field untuk konsistensi dengan area lain
+            $results = $results->map(function($plan) {
+                $plan->Assigned_Hour_Scan = '-'; // DAIICHI tidak memiliki hour
+                $plan->Time_Scan = $plan->Daiichi_Record; // Gunakan Daiichi_Record sebagai Time_Scan
+                return $plan;
+            });
+
+            return DataTables::of($results)
+                ->addIndexColumn()
+                ->make(true);
+        }
+        
         // Cek apakah area yang dipilih adalah MAIN LINE
         $area = Efficiency_Area::find($areaId);
         
@@ -402,7 +448,7 @@ class MainController extends Controller
                 ->make(true);
         }
 
-        // Logika area biasa (selain MAIN LINE)
+        // Logika area biasa (selain MAIN LINE dan DAIICHI)
         $plansSubquery = Plan::select(
             'Sequence_No_Plan',
             'Production_Date_Plan',
@@ -502,15 +548,8 @@ class MainController extends Controller
         $areaId = $request->query('area_id');
         $selectedDate = Carbon::parse($request->query('scan_date'))->startOfDay();
 
-        // Ambil nama area
-        $area = Efficiency_Area::find($areaId);
-        if (!$area) {
-            return redirect()->back()->with('error', 'Area tidak ditemukan');
-        }
-
-        // Cek apakah area adalah MAIN LINE
-        if ($area->Name_Area === 'MAIN LINE') {
-            // Gunakan logika export MAIN LINE
+        // Cek apakah area adalah DAIICHI
+        if ($areaId == 999) {
             $endDate = $selectedDate->copy()->endOfDay();
 
             $plans = Plan::select([
@@ -526,84 +565,119 @@ class MainController extends Controller
                 'Mower_No_Plan',
                 'Model_Collector_Plan',
                 'Collector_No_Plan',
-                'Lineoff_Plan'
+                'Daiichi_Record'
             ])
-            ->whereNotNull('Lineoff_Plan')
-            ->whereBetween('Lineoff_Plan', [$selectedDate, $endDate])
-            ->orderBy('Lineoff_Plan', 'asc')
+            ->whereNotNull('Daiichi_Record')
+            ->whereBetween('Daiichi_Record', [$selectedDate, $endDate])
+            ->orderBy('Daiichi_Record', 'asc')
             ->get();
+
+            $areaName = 'DAIICHI';
         } else {
-            // Logika export area biasa
-            $plansSubquery = Plan::select(
-                'Sequence_No_Plan',
-                'Production_Date_Plan',
-                'Id_Plan',
-                'Type_Plan',
-                'Model_Name_Plan',
-                'Production_No_Plan',
-                'Chasis_No_Plan',
-                'Model_Label_Plan',
-                'Safety_Frame_Label_Plan',
-                'Model_Mower_Plan',
-                'Mower_No_Plan',
-                'Model_Collector_Plan',
-                'Collector_No_Plan',
-                'Lineoff_Plan'
-            );
-
-            $query = Efficiency_Scan::select(
-                'scans.Sequence_No_Plan',
-                'scans.Production_Date_Plan',
-                DB::raw('MAX(scans.Time_Scan) as Time_Scan'),
-                DB::raw('SUM(scans.Assigned_Hour_Scan) as Assigned_Hour_Scan'),
-                'plans.Id_Plan',
-                'plans.Type_Plan',
-                'plans.Model_Name_Plan',
-                'plans.Production_No_Plan',
-                'plans.Chasis_No_Plan',
-                'plans.Model_Label_Plan',
-                'plans.Safety_Frame_Label_Plan',
-                'plans.Model_Mower_Plan',
-                'plans.Mower_No_Plan',
-                'plans.Model_Collector_Plan',
-                'plans.Collector_No_Plan',
-                'plans.Lineoff_Plan'
-            )
-            ->leftJoinSub(
-                $plansSubquery,
-                'plans',
-                function($join) {
-                    $join->on('scans.Sequence_No_Plan', '=', 'plans.Sequence_No_Plan')
-                        ->on('scans.Production_Date_Plan', '=', 'plans.Production_Date_Plan');
-                }
-            )
-            ->where('scans.Id_Area', $areaId)
-            ->groupBy(
-                'scans.Sequence_No_Plan',
-                'scans.Production_Date_Plan',
-                'plans.Id_Plan',
-                'plans.Type_Plan',
-                'plans.Model_Name_Plan',
-                'plans.Production_No_Plan',
-                'plans.Chasis_No_Plan',
-                'plans.Model_Label_Plan',
-                'plans.Safety_Frame_Label_Plan',
-                'plans.Model_Mower_Plan',
-                'plans.Mower_No_Plan',
-                'plans.Model_Collector_Plan',
-                'plans.Collector_No_Plan',
-                'plans.Lineoff_Plan'
-            );
-
-            if ($request->filled('scan_date')) {
-                $query->whereDate('scans.Time_Scan', $request->scan_date);
-            } else {
-                $query->whereDate('scans.Time_Scan', Carbon::today()->toDateString());
+            // Ambil nama area
+            $area = Efficiency_Area::find($areaId);
+            if (!$area) {
+                return redirect()->back()->with('error', 'Area tidak ditemukan');
             }
+            $areaName = $area->Name_Area;
 
-            $query->orderBy('Time_Scan', 'desc');
+            // Cek apakah area adalah MAIN LINE
+            if ($area->Name_Area === 'MAIN LINE') {
+                // Gunakan logika export MAIN LINE
+                $endDate = $selectedDate->copy()->endOfDay();
 
-            $plans = $query->get();
+                $plans = Plan::select([
+                    'Type_Plan',
+                    'Sequence_No_Plan',
+                    'Production_Date_Plan',
+                    'Model_Name_Plan',
+                    'Production_No_Plan',
+                    'Chasis_No_Plan',
+                    'Model_Label_Plan',
+                    'Safety_Frame_Label_Plan',
+                    'Model_Mower_Plan',
+                    'Mower_No_Plan',
+                    'Model_Collector_Plan',
+                    'Collector_No_Plan',
+                    'Lineoff_Plan'
+                ])
+                ->whereNotNull('Lineoff_Plan')
+                ->whereBetween('Lineoff_Plan', [$selectedDate, $endDate])
+                ->orderBy('Lineoff_Plan', 'asc')
+                ->get();
+            } else {
+                // Logika export area biasa
+                $plansSubquery = Plan::select(
+                    'Sequence_No_Plan',
+                    'Production_Date_Plan',
+                    'Id_Plan',
+                    'Type_Plan',
+                    'Model_Name_Plan',
+                    'Production_No_Plan',
+                    'Chasis_No_Plan',
+                    'Model_Label_Plan',
+                    'Safety_Frame_Label_Plan',
+                    'Model_Mower_Plan',
+                    'Mower_No_Plan',
+                    'Model_Collector_Plan',
+                    'Collector_No_Plan',
+                    'Lineoff_Plan'
+                );
+
+                $query = Efficiency_Scan::select(
+                    'scans.Sequence_No_Plan',
+                    'scans.Production_Date_Plan',
+                    DB::raw('MAX(scans.Time_Scan) as Time_Scan'),
+                    DB::raw('SUM(scans.Assigned_Hour_Scan) as Assigned_Hour_Scan'),
+                    'plans.Id_Plan',
+                    'plans.Type_Plan',
+                    'plans.Model_Name_Plan',
+                    'plans.Production_No_Plan',
+                    'plans.Chasis_No_Plan',
+                    'plans.Model_Label_Plan',
+                    'plans.Safety_Frame_Label_Plan',
+                    'plans.Model_Mower_Plan',
+                    'plans.Mower_No_Plan',
+                    'plans.Model_Collector_Plan',
+                    'plans.Collector_No_Plan',
+                    'plans.Lineoff_Plan'
+                )
+                ->leftJoinSub(
+                    $plansSubquery,
+                    'plans',
+                    function($join) {
+                        $join->on('scans.Sequence_No_Plan', '=', 'plans.Sequence_No_Plan')
+                            ->on('scans.Production_Date_Plan', '=', 'plans.Production_Date_Plan');
+                    }
+                )
+                ->where('scans.Id_Area', $areaId)
+                ->groupBy(
+                    'scans.Sequence_No_Plan',
+                    'scans.Production_Date_Plan',
+                    'plans.Id_Plan',
+                    'plans.Type_Plan',
+                    'plans.Model_Name_Plan',
+                    'plans.Production_No_Plan',
+                    'plans.Chasis_No_Plan',
+                    'plans.Model_Label_Plan',
+                    'plans.Safety_Frame_Label_Plan',
+                    'plans.Model_Mower_Plan',
+                    'plans.Mower_No_Plan',
+                    'plans.Model_Collector_Plan',
+                    'plans.Collector_No_Plan',
+                    'plans.Lineoff_Plan'
+                );
+
+                if ($request->filled('scan_date')) {
+                    $query->whereDate('scans.Time_Scan', $request->scan_date);
+                } else {
+                    $query->whereDate('scans.Time_Scan', Carbon::today()->toDateString());
+                }
+
+                $query->orderBy('Time_Scan', 'desc');
+
+                $plans = $query->get();
+            }
         }
 
         $totalPlans = $plans->count();
@@ -622,7 +696,7 @@ class MainController extends Controller
 
         // 0. Judul Area (Pink Cell)
         $sheet->setCellValue('B' . $currentRow, 'Area Scan:');
-        $sheet->setCellValue('C' . $currentRow, $area->Name_Area);
+        $sheet->setCellValue('C' . $currentRow, $areaName);
         $this->applyPinkCellStyle($sheet, 'B' . $currentRow . ':C' . $currentRow);
         $this->applyTableBorder($sheet, 'B' . $currentRow . ':C' . $currentRow);
         $currentRow++;
@@ -649,8 +723,8 @@ class MainController extends Controller
         $currentRow += 2;
 
         // 4. Header Tabel Data - Baris ke-5 (Pink Header)
-        // Untuk MAIN LINE, tidak ada kolom Hour
-        if ($area->Name_Area === 'MAIN LINE') {
+        // Untuk MAIN LINE dan DAIICHI, tidak ada kolom Hour
+        if ($areaId == 999 || (isset($area) && $area->Name_Area === 'MAIN LINE')) {
             $headers = [
                 'No', 'Sequence No', 'Model Name', 'Type', 'Production No', 'Production Date', 'Scan', 'Chasis No',
                 'Model Label', 'Safety Frame Label', 'Model Mower', 'Mower No', 'Model Collector', 'Collector No'
@@ -692,8 +766,8 @@ class MainController extends Controller
             $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); 
             $colIndex++;
             
-            // Hanya tampilkan Hour jika bukan MAIN LINE
-            if ($area->Name_Area !== 'MAIN LINE') {
+            // Hanya tampilkan Hour jika bukan MAIN LINE dan bukan DAIICHI
+            if ($areaId != 999 && (!isset($area) || $area->Name_Area !== 'MAIN LINE')) {
                 $sheet->setCellValue($colIndex . $currentRow, $plan->Assigned_Hour_Scan ?? '-'); 
                 $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); 
                 $colIndex++;
@@ -707,8 +781,14 @@ class MainController extends Controller
             $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); 
             $colIndex++;
             
-            // Untuk MAIN LINE gunakan Lineoff_Plan, untuk area lain gunakan Time_Scan
-            $scanTime = ($area->Name_Area === 'MAIN LINE') ? $plan->Lineoff_Plan : ($plan->Time_Scan ?? '-');
+            // Tentukan kolom scan berdasarkan area
+            if ($areaId == 999) {
+                $scanTime = $plan->Daiichi_Record ?? '-';
+            } elseif (isset($area) && $area->Name_Area === 'MAIN LINE') {
+                $scanTime = $plan->Lineoff_Plan ?? '-';
+            } else {
+                $scanTime = $plan->Time_Scan ?? '-';
+            }
             $sheet->setCellValue($colIndex . $currentRow, $scanTime); 
             $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); 
             $colIndex++;
@@ -787,7 +867,7 @@ class MainController extends Controller
         // --- AKHIR STYLING REKAP TIPE ---
 
         // --- OUTPUT KE BROWSER ---
-        $fileName = 'Report_' . $area->Name_Area . '_' . $selectedDate->format('Y-m-d') . '.xlsx';
+        $fileName = 'Report_' . $areaName . '_' . $selectedDate->format('Y-m-d') . '.xlsx';
 
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment;filename="' . $fileName . '"');

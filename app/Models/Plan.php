@@ -30,7 +30,8 @@ class Plan extends Model
         'Collector_No_Plan',
         'Record_Plan',
         'Lineoff_Plan',
-        'Status_Plan'
+        'Status_Plan',
+        'Daiichi_Record'
     ];
 
     public function scan()
