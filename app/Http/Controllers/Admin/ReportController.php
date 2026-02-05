@@ -459,10 +459,14 @@ class ReportController extends Controller
         $Id_User = session('Id_User');
         $user = User::find($Id_User);
 
-        // Ambil semua area dari Efficiency_Area
+        // Ambil semua area dari Efficiency_Area dan urutkan sesuai permintaan
+        $desiredOrder = ['TRANSMISI', 'SUB ENGINE', 'LINE A', 'LINE B', 'SUB ASSY', 'MAIN LINE', 'INSPEKSI', 'MOWER'];
         $areas = Efficiency_Area::select('Id_Area', 'Name_Area')
-            ->orderBy('Name_Area')
-            ->get();
+            ->get()
+            ->sortBy(function($area) use ($desiredOrder) {
+                $pos = array_search($area->Name_Area, $desiredOrder);
+                return $pos === false ? 99 : $pos;
+            });
 
         return view('admins.reports.area', compact('page', 'sub', 'user', 'areas'));
     }
@@ -623,8 +627,18 @@ class ReportController extends Controller
         $scanType = $request->input('scan_type');
         if ($area && $area->Name_Area === 'LINE A' && $scanType) {
             if ($scanType === 'unit') {
-                // Unit: tractor name matches Model_Name_Plan
-                $query->whereColumn('t.Name_Tractor', '=', 'plans.Model_Name_Plan');
+                // Unit: tractor name matches Model_Name_Plan, but exclude mower/collector
+                $query->whereColumn('t.Name_Tractor', '=', 'plans.Model_Name_Plan')
+                    ->where(function($q) {
+                        $q->where(function($q2) {
+                            $q2->whereRaw('plans.Model_Mower_Plan IS NULL')
+                               ->orWhereRaw('t.Name_Tractor != plans.Model_Mower_Plan');
+                        })
+                        ->where(function($q2) {
+                            $q2->whereRaw('plans.Model_Collector_Plan IS NULL')
+                               ->orWhereRaw('t.Name_Tractor != plans.Model_Collector_Plan');
+                        });
+                    });
             } elseif ($scanType === 'mocol') {
                 // Mocol: tractor name matches Model_Mower_Plan or Model_Collector_Plan
                 $query->where(function($q) {
@@ -737,6 +751,191 @@ class ReportController extends Controller
         exit();
     }
 
+    public function getAllAreaReports(Request $request)
+    {
+        $productionDate = $request->input('production_date', Carbon::today()->toDateString());
+        $selectedDate = Carbon::parse($productionDate);
+        
+        $startDate = $selectedDate->copy()->subDays(2)->format('Ymd');
+        $endDate = $selectedDate->copy()->addDays(2)->format('Ymd');
+
+        $query = Plan::select([
+            'Id_Plan',
+            'Type_Plan',
+            'Sequence_No_Plan',
+            'Production_Date_Plan',
+            'Model_Name_Plan',
+            'Daiichi_Record',
+            'Lineoff_Plan'
+        ])
+        ->whereBetween('Production_Date_Plan', [$startDate, $endDate])
+        ->orderBy('Production_Date_Plan', 'asc')
+        ->orderBy('Sequence_No_Plan', 'asc');
+
+        return DataTables::of($query)
+            ->addIndexColumn()
+            ->editColumn('Production_Date_Plan', function($row) {
+                try {
+                    return Carbon::createFromFormat('Ymd', $row->Production_Date_Plan)->format('d-m-Y');
+                } catch (\Exception $e) {
+                    return $row->Production_Date_Plan;
+                }
+            })
+            ->addColumn('TRANSMISI', function($row) { return $this->formatAreaStatus($row, 2, 'TRANSMISI'); })
+            ->addColumn('SUB_ENGINE', function($row) { return $this->formatAreaStatus($row, 6, 'SUB ENGINE'); })
+            ->addColumn('LINE_A', function($row) { return $this->formatAreaStatus($row, 3, 'LINE A'); })
+            ->addColumn('LINE_B', function($row) { return $this->formatAreaStatus($row, 4, 'LINE B'); })
+            ->addColumn('SUB_ASSY', function($row) { return $this->formatAreaStatus($row, 7, 'SUB ASSY'); })
+            ->addColumn('MAIN_LINE', function($row) { return $this->formatAreaStatus($row, 5, 'MAIN LINE'); })
+            ->addColumn('INSPEKSI', function($row) { return $this->formatAreaStatus($row, 8, 'INSPEKSI'); })
+            ->addColumn('MOWER', function($row) { return $this->formatAreaStatus($row, 1, 'MOWER'); })
+            ->addColumn('DAIICHI', function($row) {
+                if ($row->Daiichi_Record) {
+                    return '<span class="text-success">' . Carbon::parse($row->Daiichi_Record)->format('d-m-Y H:i') . '</span>';
+                }
+                return '<span class="text-danger">DAIICHI</span>';
+            })
+            ->rawColumns(['TRANSMISI', 'SUB_ENGINE', 'LINE_A', 'LINE_B', 'SUB_ASSY', 'MAIN_LINE', 'INSPEKSI', 'MOWER', 'DAIICHI'])
+            ->make(true);
+    }
+
+    private function formatAreaStatus($row, $areaId, $areaName)
+    {
+        if ($areaName === 'MAIN LINE' && $row->Lineoff_Plan) {
+            return '<span class="text-success">' . Carbon::parse($row->Lineoff_Plan)->format('d-m-Y H:i') . '</span>';
+        }
+
+        $scanQuery = Efficiency_Scan::where('Sequence_No_Plan', $row->Sequence_No_Plan)
+            ->where('Production_Date_Plan', $row->Production_Date_Plan)
+            ->where('Id_Area', $areaId);
+
+        if ($areaName === 'LINE A') {
+            $scanQuery->whereHas('tractor', function($q) use ($row) {
+                $q->where('Name_Tractor', '=', $row->Model_Name_Plan);
+                if ($row->Model_Mower_Plan) {
+                    $q->where('Name_Tractor', '!=', $row->Model_Mower_Plan);
+                }
+                if ($row->Model_Collector_Plan) {
+                    $q->where('Name_Tractor', '!=', $row->Model_Collector_Plan);
+                }
+            });
+        }
+
+        $scan = $scanQuery->first();
+
+        if ($scan) {
+            return '<span class="text-success">' . Carbon::parse($scan->Time_Scan)->format('d-m-Y H:i') . '</span>';
+        }
+
+        return '<span class="text-danger">' . $areaName . '</span>';
+    }
+
+    public function exportAllAreaReport(Request $request)
+    {
+        $productionDate = $request->query('production_date', Carbon::today()->toDateString());
+        $formattedProdDate = str_replace('-', '', $productionDate);
+
+        $plans = Plan::where('Production_Date_Plan', $formattedProdDate)
+            ->orderBy('Sequence_No_Plan', 'asc')
+            ->get();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('All Areas');
+
+        // Headers
+        $headers = [
+            'No', 'Production Date', 'Seq No', 'Type', 'Model',
+            'Transmisi', 'Sub Engine', 'Line A', 'Line B', 'Sub Assy', 'Main Line', 'Inspeksi', 'Mower', 'Daiichi'
+        ];
+
+        $col = 'A';
+        foreach ($headers as $header) {
+            $sheet->setCellValue($col . '1', $header);
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+            $col++;
+        }
+        $this->applyPinkHeaderStyle($sheet, 'A1:N1');
+
+        $rowNum = 2;
+        foreach ($plans as $index => $plan) {
+            $sheet->setCellValue('A' . $rowNum, $index + 1);
+            $sheet->setCellValue('B' . $rowNum, $plan->Production_Date_Plan);
+            $sheet->setCellValue('C' . $rowNum, $plan->Sequence_No_Plan);
+            $sheet->setCellValue('D' . $rowNum, $plan->Type_Plan);
+            $sheet->setCellValue('E' . $rowNum, $plan->Model_Name_Plan);
+
+            $areas = [
+                'F' => [2, 'TRANSMISI'],
+                'G' => [6, 'SUB ENGINE'],
+                'H' => [3, 'LINE A'],
+                'I' => [4, 'LINE B'],
+                'J' => [7, 'SUB ASSY'],
+                'K' => [5, 'MAIN LINE'],
+                'L' => [8, 'INSPEKSI'],
+                'M' => [1, 'MOWER']
+            ];
+
+            foreach ($areas as $col => $info) {
+                $status = $this->getAreaStatusText($plan, $info[0], $info[1]);
+                $cell = $col . $rowNum;
+                $sheet->setCellValue($cell, $status['text']);
+                $sheet->getStyle($cell)->getFont()->getColor()->setRGB($status['color']);
+            }
+
+            // Daiichi
+            $daiichiStatus = $plan->Daiichi_Record 
+                ? ['text' => Carbon::parse($plan->Daiichi_Record)->format('d-m-Y H:i'), 'color' => '008000']
+                : ['text' => 'DAIICHI', 'color' => 'FF0000'];
+            $sheet->setCellValue('N' . $rowNum, $daiichiStatus['text']);
+            $sheet->getStyle('N' . $rowNum)->getFont()->getColor()->setRGB($daiichiStatus['color']);
+
+            $rowNum++;
+        }
+
+        $this->applyTableBorder($sheet, 'A1:N' . ($rowNum - 1));
+
+        $fileName = 'Report_All_Areas_' . $productionDate . '.xlsx';
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $fileName . '"');
+        header('Cache-Control: max-age=0');
+        
+        $writer = new Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit();
+    }
+
+    private function getAreaStatusText($plan, $areaId, $areaName)
+    {
+        if ($areaName === 'MAIN LINE' && $plan->Lineoff_Plan) {
+            return ['text' => Carbon::parse($plan->Lineoff_Plan)->format('d-m-Y H:i'), 'color' => '008000']; // Green
+        }
+
+        $scanQuery = Efficiency_Scan::where('Sequence_No_Plan', $plan->Sequence_No_Plan)
+            ->where('Production_Date_Plan', $plan->Production_Date_Plan)
+            ->where('Id_Area', $areaId);
+
+        if ($areaName === 'LINE A') {
+            $scanQuery->whereHas('tractor', function($q) use ($plan) {
+                $q->where('Name_Tractor', '=', $plan->Model_Name_Plan);
+                if ($plan->Model_Mower_Plan) {
+                    $q->where('Name_Tractor', '!=', $plan->Model_Mower_Plan);
+                }
+                if ($plan->Model_Collector_Plan) {
+                    $q->where('Name_Tractor', '!=', $plan->Model_Collector_Plan);
+                }
+            });
+        }
+
+        $scan = $scanQuery->first();
+
+        if ($scan) {
+            return ['text' => Carbon::parse($scan->Time_Scan)->format('d-m-Y H:i'), 'color' => '008000']; // Green
+        }
+
+        return ['text' => $areaName, 'color' => 'FF0000']; // Red
+    }
+
     // --- FUNGSI BANTU UNTUK STYLING ---
     private function applyPinkHeaderStyle($sheet, $range) {
         $style = $sheet->getStyle($range);
@@ -755,7 +954,6 @@ class ReportController extends Controller
     private function applyTableBorder($sheet, $range) {
         $sheet->getStyle($range)->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
     }
-
     private function getRegularAreaData($areaId, $scanDate, $scanType = null)
     {
         $plansSubquery = Plan::select(
@@ -823,7 +1021,17 @@ class ReportController extends Controller
 
         if ($scanType) {
             if ($scanType === 'unit') {
-                $query->whereColumn('t.Name_Tractor', '=', 'plans.Model_Name_Plan');
+                $query->whereColumn('t.Name_Tractor', '=', 'plans.Model_Name_Plan')
+                    ->where(function($q) {
+                        $q->where(function($q2) {
+                            $q2->whereRaw('plans.Model_Mower_Plan IS NULL')
+                               ->orWhereRaw('t.Name_Tractor != plans.Model_Mower_Plan');
+                        })
+                        ->where(function($q2) {
+                            $q2->whereRaw('plans.Model_Collector_Plan IS NULL')
+                               ->orWhereRaw('t.Name_Tractor != plans.Model_Collector_Plan');
+                        });
+                    });
             } elseif ($scanType === 'mocol') {
                 $query->where(function($q) {
                     $q->whereColumn('t.Name_Tractor', '=', 'plans.Model_Mower_Plan')

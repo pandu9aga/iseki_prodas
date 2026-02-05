@@ -160,8 +160,18 @@ class AreaController extends Controller
         // Filter by scan_type for LINE A area
         if ($areaName === 'LINE A' && $scanType) {
             if ($scanType === 'unit') {
-                // Unit: tractor name matches Model_Name_Plan
-                $query->whereColumn('t.Name_Tractor', '=', 'plans.Model_Name_Plan');
+                // Unit: tractor name matches Model_Name_Plan, but exclude mower/collector
+                $query->whereColumn('t.Name_Tractor', '=', 'plans.Model_Name_Plan')
+                    ->where(function($q) {
+                        $q->where(function($q2) {
+                            $q2->whereRaw('plans.Model_Mower_Plan IS NULL')
+                               ->orWhereRaw('t.Name_Tractor != plans.Model_Mower_Plan');
+                        })
+                        ->where(function($q2) {
+                            $q2->whereRaw('plans.Model_Collector_Plan IS NULL')
+                               ->orWhereRaw('t.Name_Tractor != plans.Model_Collector_Plan');
+                        });
+                    });
             } elseif ($scanType === 'mocol') {
                 // Mocol: tractor name matches Model_Mower_Plan or Model_Collector_Plan
                 $query->where(function($q) {
@@ -605,7 +615,17 @@ class AreaController extends Controller
 
         if ($scanType) {
             if ($scanType === 'unit') {
-                $query->whereColumn('t.Name_Tractor', '=', 'plans.Model_Name_Plan');
+                $query->whereColumn('t.Name_Tractor', '=', 'plans.Model_Name_Plan')
+                    ->where(function($q) {
+                        $q->where(function($q2) {
+                            $q2->whereRaw('plans.Model_Mower_Plan IS NULL')
+                               ->orWhereRaw('t.Name_Tractor != plans.Model_Mower_Plan');
+                        })
+                        ->where(function($q2) {
+                            $q2->whereRaw('plans.Model_Collector_Plan IS NULL')
+                               ->orWhereRaw('t.Name_Tractor != plans.Model_Collector_Plan');
+                        });
+                    });
             } elseif ($scanType === 'mocol') {
                 $query->where(function($q) {
                     $q->whereColumn('t.Name_Tractor', '=', 'plans.Model_Mower_Plan')

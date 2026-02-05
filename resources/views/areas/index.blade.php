@@ -210,6 +210,31 @@
                         </div>
                     </div>
                 </div>
+            @elseif(session('Name_Area') === 'MOWER')
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title text-primary mb-3"><i class='bx bx-car'></i> Unit Types (<span id="headerDateUnit"></span>)</h5>
+                        <div id="unitTypesContainer">
+                            <p class="text-muted text-center">Memuat data...</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title text-success mb-3"><i class='bx bx-cut'></i> Mower Types (<span id="headerDateMower"></span>)</h5>
+                        <div id="mowerTypesContainer">
+                            <p class="text-muted text-center">Memuat data...</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title text-warning mb-3"><i class='bx bx-box'></i> Collector Types (<span id="headerDateCollector"></span>)</h5>
+                        <div id="collectorTypesContainer">
+                            <p class="text-muted text-center">Memuat data...</p>
+                        </div>
+                    </div>
+                </div>
             @else
                 <div class="card">
                     <div class="card-body">
@@ -742,13 +767,57 @@
 
             function loadTractorTypes() {
                 var typeCount = {};
+                var unitCount = {};
+                var mowerCount = {};
+                var collectorCount = {};
+                
+                // Cek nama area dari session (passed from backend or inline PHP)
+                var areaName = "{{ session('Name_Area') }}";
+
+                // Update headers if MOWER
+                if (areaName === 'MOWER') {
+                    // Assuming date is already available in JS from previous header code or input
+                     // But for now, just reusing logic if needed or updating specific spans
+                    var dateStr = $('#scan_date').val(); // Assuming input id
+                     if(dateStr){
+                        var dateObj = new Date(dateStr);
+                        var options = { year: 'numeric', month: 'long', day: 'numeric' };
+                        var formattedKey = dateObj.toLocaleDateString('id-ID', options);
+                         $('#headerDateUnit').text(formattedKey);
+                         $('#headerDateMower').text(formattedKey);
+                         $('#headerDateCollector').text(formattedKey);
+                     }
+                }
+
                 table.rows().data().each(function (row) {
                     var type = row.Type_Plan;
+                    var sequenceNo = row.Sequence_No_Plan || '';
+                    var modelName = row.Model_Name_Plan || '';
+                    var modelMower = row.Model_Mower_Plan || '';
+                    var modelCollector = row.Model_Collector_Plan || '';
+
                     if (type) {
-                        typeCount[type] = (typeCount[type] || 0) + 1;
+                        if (areaName === 'MOWER') {
+                            if (!sequenceNo.includes('T') && !sequenceNo.includes('t')) {
+                                unitCount[type] = (unitCount[type] || 0) + 1;
+                            } else if (modelName === modelMower) {
+                                mowerCount[type] = (mowerCount[type] || 0) + 1;
+                            } else if (modelName === modelCollector) {
+                                collectorCount[type] = (collectorCount[type] || 0) + 1;
+                            }
+                        } else {
+                            typeCount[type] = (typeCount[type] || 0) + 1;
+                        }
                     }
                 });
-                renderTractorTypes(typeCount);
+
+                if (areaName === 'MOWER') {
+                    renderTractorTypes(unitCount, '#unitTypesContainer');
+                    renderTractorTypes(mowerCount, '#mowerTypesContainer');
+                    renderTractorTypes(collectorCount, '#collectorTypesContainer');
+                } else {
+                    renderTractorTypes(typeCount);
+                }
             }
 
             // Shared function for rendering tractor types

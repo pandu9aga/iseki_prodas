@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\AuthMiddleware;
 use App\Http\Controllers\MainController;
@@ -61,6 +63,9 @@ Route::middleware(AdminMiddleware::class)->group(function () {
     Route::get('/report/area', [ReportController::class, 'areaReport'])->name('report.area');
     Route::get('/api/admin/area/reports-data', [ReportController::class, 'getAreaReports'])->name('api.admin.area.reports.data');
     Route::get('/report/area/export', [ReportController::class, 'exportAreaReport'])->name('admin.area.report.export');
+
+    Route::get('/api/admin/area/all-reports-data', [ReportController::class, 'getAllAreaReports'])->name('api.admin.area.all.reports.data');
+    Route::get('/report/area/all/export', [ReportController::class, 'exportAllAreaReport'])->name('admin.area.all.report.export');
 });
 
 Route::middleware(AuthMiddleware::class)->group(function () {

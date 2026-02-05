@@ -29,6 +29,13 @@
                                     DAIICHI
                                 </button>
                             </li>
+                            <!-- Tab ALL (Hardcoded) -->
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="area-all-tab" data-bs-toggle="tab" data-bs-target="#area-all"
+                                    type="button" role="tab" aria-controls="area-all" aria-selected="false">
+                                    ALL
+                                </button>
+                            </li>
                         </ul>
 
                         <h5 class="text-primary mt-4 mb-0 ms-4">Area: <span id="areaName"></span></h5>
@@ -134,6 +141,37 @@
                                                         <h5 class="card-title text-success mb-2"><i class='bx bx-wrench'></i> Tipe
                                                             Mocol Terscan</h5>
                                                         <div id="mocolTractorTypesContainer_{{ $area->Id_Area }}"
+                                                            class="tractor-types-container row">
+                                                            <p class="text-muted text-center">Memuat data...</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            @elseif($area->Name_Area === 'MOWER')
+                                                <div class="card mb-3">
+                                                    <div class="card-body">
+                                                        <h5 class="card-title text-primary mb-2"><i class='bx bx-car'></i> Unit
+                                                            Types (<span id="headerDateUnit_{{ $area->Id_Area }}"></span>)</h5>
+                                                        <div id="unitTypesContainer_{{ $area->Id_Area }}"
+                                                            class="tractor-types-container row">
+                                                            <p class="text-muted text-center">Memuat data...</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="card mb-3">
+                                                    <div class="card-body">
+                                                        <h5 class="card-title text-success mb-2"><i class='bx bx-cut'></i> Mower
+                                                            Types (<span id="headerDateMower_{{ $area->Id_Area }}"></span>)</h5>
+                                                        <div id="mowerTypesContainer_{{ $area->Id_Area }}"
+                                                            class="tractor-types-container row">
+                                                            <p class="text-muted text-center">Memuat data...</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="card">
+                                                    <div class="card-body">
+                                                        <h5 class="card-title text-warning mb-2"><i class='bx bx-box'></i> Collector
+                                                            Types (<span id="headerDateCollector_{{ $area->Id_Area }}"></span>)</h5>
+                                                        <div id="collectorTypesContainer_{{ $area->Id_Area }}"
                                                             class="tractor-types-container row">
                                                             <p class="text-muted text-center">Memuat data...</p>
                                                         </div>
@@ -374,14 +412,77 @@
                                             </div>
                                         </div>
                                     </div>
+                                </div> <!-- row -->
+                            </div> <!-- tab-pane DAIICHI -->
+
+                            <!-- Tab Content untuk ALL (Hardcoded) -->
+                            <div class="tab-pane fade" id="area-all" role="tabpanel" aria-labelledby="area-all-tab">
+                                <div class="row mb-3">
+                                    <div class="col-md-12">
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <div class="row g-3 align-items-end">
+                                                    <div class="col-md-6">
+                                                        <label for="production_date_all" class="form-label">Production
+                                                            Date</label>
+                                                        <div class="input-group">
+                                                            <input type="date" name="production_date"
+                                                                id="production_date_all" class="form-control"
+                                                                value="{{ Carbon\Carbon::today()->toDateString() }}">
+                                                            <button type="button" class="btn btn-outline-primary"
+                                                                id="apply-date-all">
+                                                                Apply
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <a href="#" class="btn btn-success w-100" id="export-all-btn">
+                                                            <i class='bx bx-file'></i> Export Excel
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <div class="table-responsive">
+                                                    <table id="allReportsTable" class="table table-bordered table-sm"
+                                                        style="font-size: 11px;">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>No</th>
+                                                                <th>Prod Date</th>
+                                                                <th>Seq</th>
+                                                                <th>Type</th>
+                                                                <th>Transmisi</th>
+                                                                <th>Sub Engine</th>
+                                                                <th>Line A</th>
+                                                                <th>Line B</th>
+                                                                <th>Sub Assy</th>
+                                                                <th>Main Line</th>
+                                                                <th>Inspeksi</th>
+                                                                <th>Mower</th>
+                                                                <th>Daiichi</th>
+                                                            </tr>
+                                                        </thead>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+                        </div> <!-- tab-content -->
+                    </div> <!-- card-body -->
+                </div> <!-- card -->
+            </div> <!-- col -->
+        </div> <!-- row -->
+    </div> <!-- container -->
 @endsection
 
 @section('style')
@@ -478,10 +579,11 @@
                         if (tables['mocol_{{ $area->Id_Area }}']) tables['mocol_{{ $area->Id_Area }}'].columns.adjust();
                     });
                 @else
-                    tables[{{ $area->Id_Area }}] = initTable({{ $area->Id_Area }});
+                    tables[{{ $area->Id_Area }}] = initTable({{ $area->Id_Area }}, "{{ $area->Name_Area }}");
                 @endif
             @endforeach
-            tables[999] = initTable(999); // DAIICHI
+            tables[999] = initTable(999, 'DAIICHI'); // DAIICHI
+            tables['all'] = initAllTable(); // ALL
 
             // LINE A table initialization function
             function initLineATable(areaId, scanType) {
@@ -517,7 +619,7 @@
                 document.getElementById('areaName').textContent = initialAreaName;
             }
 
-            function initTable(areaId) {
+            function initTable(areaId, areaName) {
                 var tableId = 'reportsTable_' + areaId;
 
                 return $('#' + tableId).DataTable({
@@ -535,7 +637,7 @@
                         },
                         dataSrc: function (json) {
                             $('#total_' + areaId).text(json.recordsFiltered);
-                            updateTractorTypes(areaId, json.data);
+                            updateTractorTypes(areaId, json.data, null, areaName);
                             return json.data;
                         }
                     },
@@ -548,8 +650,12 @@
             }
 
 
-            function updateTractorTypes(areaId, data, scanType) {
+            function updateTractorTypes(areaId, data, scanType, areaName) {
                 var typeCount = {};
+                var unitCount = {};
+                var mowerCount = {};
+                var collectorCount = {};
+
                 var scanDate = $('#scan_date_' + areaId).val();
 
                 var dateObj = new Date(scanDate + 'T00:00:00');
@@ -560,38 +666,74 @@
                 $('#tractorTypeDate_' + areaId).html(formattedDateId);
                 $('#totalScanDate_' + areaId).html(formattedDate);
 
+                // Set dates for Mower containers
+                if (areaName === 'MOWER') {
+                    $('#headerDateUnit_' + areaId).html(formattedDateId);
+                    $('#headerDateMower_' + areaId).html(formattedDateId);
+                    $('#headerDateCollector_' + areaId).html(formattedDateId);
+                }
+
                 data.forEach(function (row) {
                     var type = row.Type_Plan;
+                    var sequenceNo = row.Sequence_No_Plan || '';
+                    var modelName = row.Model_Name_Plan || '';
+                    var modelMower = row.Model_Mower_Plan || '';
+                    var modelCollector = row.Model_Collector_Plan || '';
+
                     if (type) {
-                        typeCount[type] = (typeCount[type] || 0) + 1;
+                        if (areaName === 'MOWER') {
+                            // Logic grouping for MOWER area
+                            if (!sequenceNo.includes('T') && !sequenceNo.includes('t')) {
+                                // Unit
+                                unitCount[type] = (unitCount[type] || 0) + 1;
+                            } else if (modelName === modelMower) {
+                                // Mower
+                                mowerCount[type] = (mowerCount[type] || 0) + 1;
+                            } else if (modelName === modelCollector) {
+                                // Collector
+                                collectorCount[type] = (collectorCount[type] || 0) + 1;
+                            }
+                        } else {
+                            // Default logic
+                            typeCount[type] = (typeCount[type] || 0) + 1;
+                        }
                     }
                 });
 
-                var html = '';
-                if (Object.keys(typeCount).length > 0) {
-                    Object.keys(typeCount).sort().forEach(function (type) {
-                        var bgColor = validTypes.includes(type) ? (typeColors[type] || '#D3D3D3') : '#D3D3D3';
-                        html += '<div class="tractor-type-card col-lg-6 mb-2">';
-                        html += '<div class="row">';
-                        html += '<div class="col-lg-5">';
-                        html += '<img src="{{ asset("assets/img/tractors") }}/' + type + '.png" alt="' + type + '" class="img-fluid">';
-                        html += '</div>';
-                        html += '<div class="col-lg-7">';
-                        html += '<span class="badge tractor-type-badge" style="background-color: ' + bgColor + '; color: black;">' + type + '</span>';
-                        html += '<div class="tractor-type-count">' + typeCount[type] + '</div>';
-                        html += '</div>';
-                        html += '</div>';
-                        html += '</div>';
-                    });
-                } else {
-                    html = '<p class="text-muted text-center">Belum ada scan.</p>';
+                function renderCards(counts, containerSelector) {
+                    var html = '';
+                    if (Object.keys(counts).length > 0) {
+                        Object.keys(counts).sort().forEach(function (type) {
+                            var bgColor = validTypes.includes(type) ? (typeColors[type] || '#D3D3D3') : '#D3D3D3';
+                            html += '<div class="tractor-type-card col-lg-6 mb-2">';
+                            html += '<div class="row">';
+                            html += '<div class="col-lg-5">';
+                            html += '<img src="{{ asset("assets/img/tractors") }}/' + type + '.png" alt="' + type + '" class="img-fluid">';
+                            html += '</div>';
+                            html += '<div class="col-lg-7">';
+                            html += '<span class="badge tractor-type-badge" style="background-color: ' + bgColor + '; color: black;">' + type + '</span>';
+                            html += '<div class="tractor-type-count">' + counts[type] + '</div>';
+                            html += '</div>';
+                            html += '</div>';
+                            html += '</div>';
+                        });
+                    } else {
+                        html = '<p class="text-muted text-center">Belum ada scan.</p>';
+                    }
+                    $(containerSelector).html(html);
                 }
 
-                var targetContainer = '#tractorTypesContainer_' + areaId;
-                if (scanType) {
-                    targetContainer = '#' + scanType + 'TractorTypesContainer_' + areaId;
+                if (areaName === 'MOWER') {
+                    renderCards(unitCount, '#unitTypesContainer_' + areaId);
+                    renderCards(mowerCount, '#mowerTypesContainer_' + areaId);
+                    renderCards(collectorCount, '#collectorTypesContainer_' + areaId);
+                } else {
+                    var targetContainer = '#tractorTypesContainer_' + areaId;
+                    if (scanType) {
+                        targetContainer = '#' + scanType + 'TractorTypesContainer_' + areaId;
+                    }
+                    renderCards(typeCount, targetContainer);
                 }
-                $(targetContainer).html(html);
             }
 
             // Apply date filter
@@ -608,7 +750,7 @@
             });
 
 
-            // Export Excel
+            // Export Excel for individual areas
             $('.export-btn').on('click', function (e) {
                 e.preventDefault();
                 var areaId = $(this).data('area-id');
@@ -616,6 +758,58 @@
                 window.location.href = "{{ route('admin.area.report.export') }}" +
                     '?area_id=' + areaId +
                     '&scan_date=' + scanDate;
+            });
+
+            // --- ALL TABLE ---
+            function initAllTable() {
+                return $('#allReportsTable').DataTable({
+                    processing: true,
+                    serverSide: true,
+                    pageLength: -1,
+                    lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                    ajax: {
+                        url: "{{ route('api.admin.area.all.reports.data') }}",
+                        type: 'GET',
+                        data: function (d) {
+                            d.production_date = $('#production_date_all').val();
+                        }
+                    },
+                    columns: [
+                        { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
+                        { data: 'Production_Date_Plan', name: 'Production_Date_Plan' },
+                        { data: 'Sequence_No_Plan', name: 'Sequence_No_Plan' },
+                        {
+                            data: 'Type_Plan',
+                            name: 'Type_Plan',
+                            render: function (data) {
+                                var bgColor = validTypes.includes(data) ? (typeColors[data] || '#D3D3D3') : '#D3D3D3';
+                                return '<span class="badge" style="background-color: ' + bgColor + '; color: black;">' + data + '</span>';
+                            }
+                        },
+                        { data: 'TRANSMISI', name: 'TRANSMISI', orderable: false },
+                        { data: 'SUB_ENGINE', name: 'SUB_ENGINE', orderable: false },
+                        { data: 'LINE_A', name: 'LINE_A', orderable: false },
+                        { data: 'LINE_B', name: 'LINE_B', orderable: false },
+                        { data: 'SUB_ASSY', name: 'SUB_ASSY', orderable: false },
+                        { data: 'MAIN_LINE', name: 'MAIN_LINE', orderable: false },
+                        { data: 'INSPEKSI', name: 'INSPEKSI', orderable: false },
+                        { data: 'MOWER', name: 'MOWER', orderable: false },
+                        { data: 'DAIICHI', name: 'DAIICHI', orderable: false }
+                    ],
+                    scrollX: true,
+                    scrollY: "500px",
+                    scrollCollapse: true
+                });
+            }
+
+            $('#apply-date-all').on('click', function () {
+                tables['all'].draw();
+            });
+
+            $('#export-all-btn').on('click', function (e) {
+                e.preventDefault();
+                var prodDate = $('#production_date_all').val();
+                window.location.href = "{{ route('admin.area.all.report.export') }}?production_date=" + prodDate;
             });
         });
     </script>
