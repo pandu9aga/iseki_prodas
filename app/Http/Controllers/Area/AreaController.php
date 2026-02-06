@@ -59,11 +59,17 @@ class AreaController extends Controller
 
         $selectedDate = $request->query('scan_date', Carbon::today()->toDateString());
 
-        $scanCount = Efficiency_Scan::where('Id_Area', $areaId)
-                                    ->whereDate('Time_Scan', $selectedDate)
-                                    ->select('Sequence_No_Plan', 'Production_Date_Plan')
-                                    ->distinct()
-                                    ->count();
+        $defaultDb = config('database.connections.mysql.database');
+        
+        $scanCount = Efficiency_Scan::join(DB::connection('efficiency')->raw('tractors as t'), 'scans.Id_Tractor', '=', 't.Id_Tractor')
+                                    ->leftJoin(DB::raw("`{$defaultDb}`.`plans` as plans"), function($join) {
+                                        $join->on('scans.Sequence_No_Plan', '=', 'plans.Sequence_No_Plan')
+                                            ->on('scans.Production_Date_Plan', '=', 'plans.Production_Date_Plan');
+                                    })
+                                    ->where('scans.Id_Area', $areaId)
+                                    ->whereDate('scans.Time_Scan', $selectedDate)
+                                    ->distinct('scans.Sequence_No_Plan', 'scans.Production_Date_Plan') // Distinct Sequence+Date
+                                    ->count('scans.Sequence_No_Plan'); // Count distinct sequences
 
         if ($areaName === 'LINE A') {
             $defaultDb = config('database.connections.mysql.database');
@@ -97,7 +103,6 @@ class AreaController extends Controller
                 
             return view('areas.index', compact('areaName', 'areaId', 'scanCount', 'selectedDate', 'unitScanCount', 'mocolScanCount'));
         }
-
 
         return view('areas.index', compact('areaName', 'areaId', 'scanCount', 'selectedDate'));
     }
@@ -548,7 +553,7 @@ class AreaController extends Controller
         $sheet->getStyle($range)->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
     }
 
-    private function getExportDataForArea($areaId, $scanDate, $scanType = null)
+    private function getExportDataForArea($areaId, $scanDate, $scanType = null, $areaName = null)
     {
         $plansSubquery = Plan::select(
             'Sequence_No_Plan',
@@ -614,30 +619,45 @@ class AreaController extends Controller
         );
 
         if ($scanType) {
-            if ($scanType === 'unit') {
-                $query->whereColumn('t.Name_Tractor', '=', 'plans.Model_Name_Plan')
-                    ->where(function($q) {
-                        $q->where(function($q2) {
-                            $q2->whereRaw('plans.Model_Mower_Plan IS NULL')
-                               ->orWhereRaw('t.Name_Tractor != plans.Model_Mower_Plan');
-                        })
-                        ->where(function($q2) {
-                            $q2->whereRaw('plans.Model_Collector_Plan IS NULL')
-                               ->orWhereRaw('t.Name_Tractor != plans.Model_Collector_Plan');
+            if ($areaName === 'LINE A') {
+                if ($scanType === 'unit') {
+                    $query->whereColumn('t.Name_Tractor', '=', 'plans.Model_Name_Plan')
+                        ->where(function($q) {
+                            $q->where(function($q2) {
+                                $q2->whereRaw('plans.Model_Mower_Plan IS NULL')
+                                ->orWhereRaw('t.Name_Tractor != plans.Model_Mower_Plan');
+                            })
+                            ->where(function($q2) {
+                                $q2->whereRaw('plans.Model_Collector_Plan IS NULL')
+                                ->orWhereRaw('t.Name_Tractor != plans.Model_Collector_Plan');
+                            });
                         });
+                } elseif ($scanType === 'mocol') {
+                    $query->where(function($q) {
+                        $q->whereColumn('t.Name_Tractor', '=', 'plans.Model_Mower_Plan')
+                        ->orWhereColumn('t.Name_Tractor', '=', 'plans.Model_Collector_Plan');
                     });
-            } elseif ($scanType === 'mocol') {
-                $query->where(function($q) {
-                    $q->whereColumn('t.Name_Tractor', '=', 'plans.Model_Mower_Plan')
-                      ->orWhereColumn('t.Name_Tractor', '=', 'plans.Model_Collector_Plan');
-                });
+                }
+            } elseif ($areaName === 'MOWER') {
+                if ($scanType === 'unit') {
+                    // Unit: Sequence No does NOT contain 'T' or 't'
+                    $query->where('scans.Sequence_No_Plan', 'NOT REGEXP', '[Tt]');
+                } elseif ($scanType === 'mower') {
+                    // Mower: Sequence No contains 'T'/'t' AND Model matches Mower Model
+                    $query->where('scans.Sequence_No_Plan', 'REGEXP', '[Tt]')
+                        ->whereColumn('plans.Model_Name_Plan', '=', 'plans.Model_Mower_Plan');
+                } elseif ($scanType === 'collector') {
+                    // Collector: Sequence No contains 'T'/'t' AND Model matches Collector Model
+                    $query->where('scans.Sequence_No_Plan', 'REGEXP', '[Tt]')
+                            ->whereColumn('plans.Model_Name_Plan', '=', 'plans.Model_Collector_Plan');
+                }
             }
         }
 
         return $query->orderBy('Time_Scan', 'desc')->get();
     }
 
-    private function populateSheetWithData($sheet, $plans, $areaName, $selectedDate)
+    private function populateSheetWithData($sheet, $plans, $areaName, $selectedDate, $startRow = 2)
     {
         $totalPlans = $plans->count();
         $typeCounts = $plans->groupBy('Type_Plan')->map(function ($group) {
@@ -646,7 +666,7 @@ class AreaController extends Controller
         $sortedTypeCounts = $typeCounts->toArray();
         ksort($sortedTypeCounts);
 
-        $currentRow = 2;
+        $currentRow = $startRow;
 
         // 0. Judul Area
         $sheet->setCellValue('B' . $currentRow, 'Area Scan:');
@@ -714,15 +734,29 @@ class AreaController extends Controller
         }
         $lastDataRow = $currentRow - 1;
 
-        $this->applyTableBorder($sheet, 'A' . $tableHeaderRow . ':O' . $lastDataRow);
-        $sheet->setAutoFilter('A' . $tableHeaderRow . ':O' . $lastDataRow);
+        if ($totalPlans > 0) {
+            $this->applyTableBorder($sheet, 'A' . $tableHeaderRow . ':O' . $lastDataRow);
+            
+            // Use Excel Table (ListObject) instead of AutoFilter
+            $tableRange = 'A' . $tableHeaderRow . ':O' . $lastDataRow;
+            // Create unique table name: "Table_AreaName_StartRow" (sanitized)
+            $safeAreaName = preg_replace('/[^a-zA-Z0-9]/', '', $areaName);
+            $tableName = 'Table_' . $safeAreaName . '_' . $startRow . '_' . uniqid(); // Add uniqid to be extra safe
+            
+            $table = new \PhpOffice\PhpSpreadsheet\Worksheet\Table();
+            $table->setName($tableName);
+            $table->setShowHeaderRow(true);
+            $table->setRange($tableRange);
+            $table->setStyle((new \PhpOffice\PhpSpreadsheet\Worksheet\Table\TableStyle())->setTheme(\PhpOffice\PhpSpreadsheet\Worksheet\Table\TableStyle::TABLE_STYLE_LIGHT1));
+            $sheet->addTable($table);
+        }
 
         foreach (range('A', 'O') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
         // 6. Header Rekap Tipe
-        $rekapHeaderRow = 5;
+        $rekapHeaderRow = $startRow + 3;
         $sheet->setCellValue('Q' . $rekapHeaderRow, 'Type:');
         $this->applyPinkHeaderStyle($sheet, 'Q' . $rekapHeaderRow . ':R' . $rekapHeaderRow);
 
@@ -746,6 +780,8 @@ class AreaController extends Controller
         foreach (range('Q', 'R') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
+
+        return $currentRow;
     }
 
     // --- AKHIR FUNGSI BANTU ---
@@ -766,16 +802,38 @@ class AreaController extends Controller
             // Sheet UNIT
             $sheetUnit = $spreadsheet->getActiveSheet();
             $sheetUnit->setTitle('UNIT');
-            $plansUnit = $this->getExportDataForArea($areaId, $selectedDate->toDateString(), 'unit');
+            $plansUnit = $this->getExportDataForArea($areaId, $selectedDate->toDateString(), 'unit', $areaName);
             $this->populateSheetWithData($sheetUnit, $plansUnit, $areaName . ' - UNIT', $selectedDate);
 
             // Sheet MOCOL
             $sheetMocol = $spreadsheet->createSheet();
             $sheetMocol->setTitle('MOCOL');
-            $plansMocol = $this->getExportDataForArea($areaId, $selectedDate->toDateString(), 'mocol');
+            $plansMocol = $this->getExportDataForArea($areaId, $selectedDate->toDateString(), 'mocol', $areaName);
             $this->populateSheetWithData($sheetMocol, $plansMocol, $areaName . ' - MOCOL', $selectedDate);
             
             $spreadsheet->setActiveSheetIndex(0);
+        } elseif ($areaName === 'MOWER') {
+             // SINGLE SHEET FOR MOWER (Stacked)
+             $sheet = $spreadsheet->getActiveSheet();
+             $sheet->setTitle('MOWER REPORT');
+ 
+             // 1. UNIT Data
+             $plansUnit = $this->getExportDataForArea($areaId, $selectedDate->toDateString(), 'unit', $areaName);
+             $nextRow = $this->populateSheetWithData($sheet, $plansUnit, $areaName . ' - UNIT', $selectedDate);
+ 
+             // 2. MOWER Data
+             // Add some spacing
+             $nextRow += 2; 
+             $plansMower = $this->getExportDataForArea($areaId, $selectedDate->toDateString(), 'mower', $areaName);
+             $nextRow = $this->populateSheetWithData($sheet, $plansMower, $areaName . ' - MOWER', $selectedDate, $nextRow);
+ 
+             // 3. COLLECTOR Data
+             // Add some spacing
+             $nextRow += 2;
+             $plansCollector = $this->getExportDataForArea($areaId, $selectedDate->toDateString(), 'collector', $areaName);
+             $this->populateSheetWithData($sheet, $plansCollector, $areaName . ' - COLLECTOR', $selectedDate, $nextRow);
+             
+             $spreadsheet->setActiveSheetIndex(0);
         } else {
             $sheet = $spreadsheet->getActiveSheet();
             $plans = $this->getExportDataForArea($areaId, $selectedDate->toDateString());
@@ -1076,44 +1134,90 @@ class AreaController extends Controller
         ]);
 
         $selectedDate = Carbon::parse($request->query('scan_date'))->startOfDay();
-        $endDate = $selectedDate->copy()->endOfDay();
 
-        $plans = Plan::select([
-            'Type_Plan',
-            'Sequence_No_Plan',
-            'Production_Date_Plan',
-            'Model_Name_Plan',
-            'Production_No_Plan',
-            'Chasis_No_Plan',
-            'Model_Label_Plan',
-            'Safety_Frame_Label_Plan',
-            'Model_Mower_Plan',
-            'Mower_No_Plan',
-            'Model_Collector_Plan',
-            'Collector_No_Plan',
-            'Daiichi_Record'
+        $spreadsheet = new Spreadsheet();
+        
+        // SINGLE SHEET FOR DAIICHI (Stacked)
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('DAIICHI REPORT');
+        $areaName = 'DAIICHI';
+
+        // 1. UNIT Data
+        $plansUnit = $this->getDaiichiData($selectedDate->toDateString(), 'unit');
+        $row = $this->populateSheet($sheet, $plansUnit, 'DAIICHI - UNIT', $selectedDate);
+        
+        // 2. MOWER Data
+        $row += 2;
+        $plansMower = $this->getDaiichiData($selectedDate->toDateString(), 'mower');
+        $row = $this->populateSheet($sheet, $plansMower, 'DAIICHI - MOWER', $selectedDate, $row);
+
+        // 3. COLLECTOR Data
+        $row += 2;
+        $plansCollector = $this->getDaiichiData($selectedDate->toDateString(), 'collector');
+        $this->populateSheet($sheet, $plansCollector, 'DAIICHI - COLLECTOR', $selectedDate, $row);
+
+        // --- OUTPUT KE BROWSER ---
+        $fileName = 'Report_DAIICHI_' . $selectedDate->format('Y-m-d') . '.xlsx';
+
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $fileName . '"');
+        header('Cache-Control: max-age=0');
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
+
+        $writer = new Xlsx($spreadsheet);
+        $writer->save('php://output');
+
+        exit();
+    }
+
+    private function getDaiichiData($date, $type = null)
+    {
+        $query = Plan::select([
+            'Type_Plan', 'Sequence_No_Plan', 'Production_Date_Plan', 'Model_Name_Plan', 'Production_No_Plan',
+            'Chasis_No_Plan', 'Model_Label_Plan', 'Safety_Frame_Label_Plan', 'Model_Mower_Plan', 'Mower_No_Plan',
+            'Model_Collector_Plan', 'Collector_No_Plan', 'Daiichi_Record'
         ])
         ->whereNotNull('Daiichi_Record')
-        ->whereBetween('Daiichi_Record', [$selectedDate, $endDate])
-        ->orderBy('Daiichi_Record', 'asc')
-        ->get();
+        ->whereDate('Daiichi_Record', $date);
 
+        if ($type === 'unit') {
+             $query->where('Sequence_No_Plan', 'NOT REGEXP', '[Tt]');
+        } elseif ($type === 'mower') {
+             $query->where('Sequence_No_Plan', 'REGEXP', '[Tt]')
+                   ->whereColumn('Model_Name_Plan', 'Model_Mower_Plan');
+        } elseif ($type === 'collector') {
+             $query->where('Sequence_No_Plan', 'REGEXP', '[Tt]')
+                   ->whereColumn('Model_Name_Plan', 'Model_Collector_Plan');
+        }
+
+        $results = $query->orderBy('Daiichi_Record', 'desc')->get();
+
+        // Transform data to match populateSheetWithData requirements
+        $results->transform(function ($item) {
+            $item->Time_Scan = $item->Daiichi_Record;
+            $item->Assigned_Hour_Scan = '-';
+            return $item;
+        });
+
+        return $results;
+    }
+
+    private function populateSheet($sheet, $plans, $areaName, $selectedDate, $startRow = 2)
+    {
         $totalPlans = $plans->count();
-
         $typeCounts = $plans->groupBy('Type_Plan')->map(function ($group) {
             return $group->count();
         });
         $sortedTypeCounts = $typeCounts->toArray();
         ksort($sortedTypeCounts);
 
-        $spreadsheet = new Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
-
-        $currentRow = 2;
+        $currentRow = $startRow;
 
         // 0. Judul Area
         $sheet->setCellValue('B' . $currentRow, 'Area Scan:');
-        $sheet->setCellValue('C' . $currentRow, 'DAIICHI');
+        $sheet->setCellValue('C' . $currentRow, $areaName);
         $this->applyPinkCellStyle($sheet, 'B' . $currentRow . ':C' . $currentRow);
         $this->applyTableBorder($sheet, 'B' . $currentRow . ':C' . $currentRow);
         $currentRow++;
@@ -1144,13 +1248,15 @@ class AreaController extends Controller
             'No', 'Sequence No', 'Model Name', 'Type', 'Production No', 'Production Date', 'Scan', 'Chasis No',
             'Model Label', 'Safety Frame Label', 'Model Mower', 'Mower No', 'Model Collector', 'Collector No'
         ];
+
         $colIndex = 'A';
         foreach ($headers as $header) {
             $sheet->setCellValue($colIndex . $currentRow, $header);
             $colIndex++;
         }
         $tableHeaderRow = $currentRow;
-        $this->applyPinkHeaderStyle($sheet, 'A' . $tableHeaderRow . ':N' . $tableHeaderRow);
+        $lastHeaderCol = chr(ord('A') + count($headers) - 1);
+        $this->applyPinkHeaderStyle($sheet, 'A' . $tableHeaderRow . ':' . $lastHeaderCol . $tableHeaderRow);
         $currentRow++;
 
         // 5. Isi Data Tabel
@@ -1161,9 +1267,15 @@ class AreaController extends Controller
             $sheet->setCellValue($colIndex . $currentRow, $plan->Sequence_No_Plan); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
             $sheet->setCellValue($colIndex . $currentRow, $plan->Model_Name_Plan); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
             $sheet->setCellValue($colIndex . $currentRow, $plan->Type_Plan); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
+            
+            // Skip Hour (Assigned_Hour_Scan) because Daiichi is "Special"
+            
             $sheet->setCellValue($colIndex . $currentRow, $plan->Production_No_Plan); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
             $sheet->setCellValue($colIndex . $currentRow, $plan->Production_Date_Plan); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
-            $sheet->setCellValue($colIndex . $currentRow, $plan->Daiichi_Record); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
+            
+            $scanTime = $plan->Daiichi_Record ?? '-'; // Use Daiichi_Record
+            $sheet->setCellValue($colIndex . $currentRow, $scanTime); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
+            
             $sheet->setCellValue($colIndex . $currentRow, $plan->Chasis_No_Plan); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
             $sheet->setCellValue($colIndex . $currentRow, $plan->Model_Label_Plan); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
             $sheet->setCellValue($colIndex . $currentRow, $plan->Safety_Frame_Label_Plan); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
@@ -1176,54 +1288,53 @@ class AreaController extends Controller
         }
         $lastDataRow = $currentRow - 1;
 
-        // Styling Tabel Data
-        $this->applyTableBorder($sheet, 'A' . $tableHeaderRow . ':N' . $lastDataRow);
-        $sheet->setAutoFilter('A' . $tableHeaderRow . ':N' . $lastDataRow);
+        if ($totalPlans > 0) {
+            $this->applyTableBorder($sheet, 'A' . $tableHeaderRow . ':' . $lastHeaderCol . $lastDataRow);
+            
+            // Excel Table
+            $tableRange = 'A' . $tableHeaderRow . ':' . $lastHeaderCol . $lastDataRow;
+            $tableName = 'Table_' . preg_replace('/[^a-zA-Z0-9]/', '', $areaName) . '_' . $startRow; 
+            
+            $table = new \PhpOffice\PhpSpreadsheet\Worksheet\Table();
+            $table->setName($tableName);
+            $table->setShowHeaderRow(true);
+            $table->setRange($tableRange);
+            $table->setStyle((new \PhpOffice\PhpSpreadsheet\Worksheet\Table\TableStyle())->setTheme(\PhpOffice\PhpSpreadsheet\Worksheet\Table\TableStyle::TABLE_STYLE_LIGHT1));
+            $sheet->addTable($table);
+        }
 
-        foreach (range('A', 'N') as $col) {
+        foreach (range('A', $lastHeaderCol) as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
-        // 6. Header Rekap Tipe
-        $rekapHeaderRow = 5;
-        $sheet->setCellValue('P' . $rekapHeaderRow, 'Type:');
-        $this->applyPinkHeaderStyle($sheet, 'P' . $rekapHeaderRow . ':Q' . $rekapHeaderRow);
+        // 6. Rekap Tipe (using logic from ReportController)
+        $rekapHeaderRow = $startRow + 3; 
 
-        // 7. Isi Rekap Tipe & Jumlah
+        $rekapStartCol = chr(ord($lastHeaderCol) + 2);
+        $rekapEndCol = chr(ord($rekapStartCol) + 1);
+        $sheet->setCellValue($rekapStartCol . $rekapHeaderRow, 'Type:');
+        $this->applyPinkHeaderStyle($sheet, $rekapStartCol . $rekapHeaderRow . ':' . $rekapEndCol . $rekapHeaderRow);
+
         $currentRekapRow = $rekapHeaderRow + 1;
         foreach ($sortedTypeCounts as $type => $count) {
-            $sheet->setCellValue('P' . $currentRekapRow, $type);
-            $sheet->setCellValue('Q' . $currentRekapRow, $count);
+            $sheet->setCellValue($rekapStartCol . $currentRekapRow, $type);
+            $sheet->setCellValue($rekapEndCol . $currentRekapRow, $count);
             $currentRekapRow++;
         }
 
-        // Styling Rekap Tipe
-        $this->applyTableBorder($sheet, 'P' . ($rekapHeaderRow + 1) . ':Q' . ($currentRekapRow - 1));
+        $this->applyTableBorder($sheet, $rekapStartCol . ($rekapHeaderRow + 1) . ':' . $rekapEndCol . ($currentRekapRow - 1));
 
-        $sheet->setCellValue('P' . $currentRekapRow, 'Total Keseluruhan:');
-        $sheet->setCellValue('Q' . $currentRekapRow, $totalPlans);
-        $style = $sheet->getStyle('P' . $currentRekapRow . ':Q' . $currentRekapRow);
+        $sheet->setCellValue($rekapStartCol . $currentRekapRow, 'Total Keseluruhan:');
+        $sheet->setCellValue($rekapEndCol . $currentRekapRow, $totalPlans);
+        $style = $sheet->getStyle($rekapStartCol . $currentRekapRow . ':' . $rekapEndCol . $currentRekapRow);
         $style->getFont()->setBold(true);
         $style->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('FFC0CB');
         $style->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
 
-        foreach (range('P', 'Q') as $col) {
+        foreach ([$rekapStartCol, $rekapEndCol] as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
-        // Output ke Browser
-        $fileName = 'Report_DAIICHI_' . $selectedDate->format('Y-m-d') . '.xlsx';
-
-        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        header('Content-Disposition: attachment;filename="' . $fileName . '"');
-        header('Cache-Control: max-age=0');
-        if (ob_get_level()) {
-            ob_end_clean();
-        }
-
-        $writer = new Xlsx($spreadsheet);
-        $writer->save('php://output');
-
-        exit();
+        return $currentRow;
     }
 }

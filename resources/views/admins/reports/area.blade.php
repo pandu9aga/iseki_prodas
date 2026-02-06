@@ -150,7 +150,7 @@
                                                 <div class="card mb-3">
                                                     <div class="card-body">
                                                         <h5 class="card-title text-primary mb-2"><i class='bx bx-car'></i> Unit
-                                                            Types (<span id="headerDateUnit_{{ $area->Id_Area }}"></span>)</h5>
+                                                            (<span id="headerDateUnit_{{ $area->Id_Area }}"></span>)</h5>
                                                         <div id="unitTypesContainer_{{ $area->Id_Area }}"
                                                             class="tractor-types-container row">
                                                             <p class="text-muted text-center">Memuat data...</p>
@@ -159,8 +159,8 @@
                                                 </div>
                                                 <div class="card mb-3">
                                                     <div class="card-body">
-                                                        <h5 class="card-title text-success mb-2"><i class='bx bx-cut'></i> Mower
-                                                            Types (<span id="headerDateMower_{{ $area->Id_Area }}"></span>)</h5>
+                                                        <h5 class="card-title text-success mb-2"><i class='bx bx-cut'></i> T - Mower
+                                                            (<span id="headerDateMower_{{ $area->Id_Area }}"></span>)</h5>
                                                         <div id="mowerTypesContainer_{{ $area->Id_Area }}"
                                                             class="tractor-types-container row">
                                                             <p class="text-muted text-center">Memuat data...</p>
@@ -169,8 +169,9 @@
                                                 </div>
                                                 <div class="card">
                                                     <div class="card-body">
-                                                        <h5 class="card-title text-warning mb-2"><i class='bx bx-box'></i> Collector
-                                                            Types (<span id="headerDateCollector_{{ $area->Id_Area }}"></span>)</h5>
+                                                        <h5 class="card-title text-warning mb-2"><i class='bx bx-box'></i> T -
+                                                            Collector
+                                                            (<span id="headerDateCollector_{{ $area->Id_Area }}"></span>)</h5>
                                                         <div id="collectorTypesContainer_{{ $area->Id_Area }}"
                                                             class="tractor-types-container row">
                                                             <p class="text-muted text-center">Memuat data...</p>
@@ -367,13 +368,32 @@
 
                                 <!-- Tractor Types Card dan Tabel Data -->
                                 <div class="row mb-3">
-                                    <!-- Kolom Kiri: Tractor Types Card -->
+                                    <!-- Kolom Kiri: Tractor Types Card (Refactored for DAIICHI Grouping) -->
                                     <div class="col-md-4">
+                                        <div class="card mb-3">
+                                            <div class="card-body">
+                                                <h5 class="card-title text-primary mb-2"><i class='bx bx-car'></i> Unit
+                                                    (<span id="headerDateUnit_999"></span>)</h5>
+                                                <div id="unitTypesContainer_999" class="tractor-types-container row">
+                                                    <p class="text-muted text-center">Memuat data...</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="card mb-3">
+                                            <div class="card-body">
+                                                <h5 class="card-title text-success mb-2"><i class='bx bx-cut'></i> T - Mower
+                                                    (<span id="headerDateMower_999"></span>)</h5>
+                                                <div id="mowerTypesContainer_999" class="tractor-types-container row">
+                                                    <p class="text-muted text-center">Memuat data...</p>
+                                                </div>
+                                            </div>
+                                        </div>
                                         <div class="card">
                                             <div class="card-body">
-                                                <h5 class="card-title text-primary mb-2">Tipe Traktor Terscan (<span
-                                                        id="tractorTypeDate_999"></span>)</h5>
-                                                <div id="tractorTypesContainer_999" class="tractor-types-container row">
+                                                <h5 class="card-title text-warning mb-2"><i class='bx bx-box'></i> T -
+                                                    Collector
+                                                    (<span id="headerDateCollector_999"></span>)</h5>
+                                                <div id="collectorTypesContainer_999" class="tractor-types-container row">
                                                     <p class="text-muted text-center">Memuat data...</p>
                                                 </div>
                                             </div>
@@ -666,8 +686,8 @@
                 $('#tractorTypeDate_' + areaId).html(formattedDateId);
                 $('#totalScanDate_' + areaId).html(formattedDate);
 
-                // Set dates for Mower containers
-                if (areaName === 'MOWER') {
+                // Set dates for Mower/Daiichi containers
+                if (areaName === 'MOWER' || areaName === 'DAIICHI') {
                     $('#headerDateUnit_' + areaId).html(formattedDateId);
                     $('#headerDateMower_' + areaId).html(formattedDateId);
                     $('#headerDateCollector_' + areaId).html(formattedDateId);
@@ -681,8 +701,8 @@
                     var modelCollector = row.Model_Collector_Plan || '';
 
                     if (type) {
-                        if (areaName === 'MOWER') {
-                            // Logic grouping for MOWER area
+                        if (areaName === 'MOWER' || areaName === 'DAIICHI') {
+                            // Logic grouping for MOWER and DAIICHI area
                             if (!sequenceNo.includes('T') && !sequenceNo.includes('t')) {
                                 // Unit
                                 unitCount[type] = (unitCount[type] || 0) + 1;
@@ -723,7 +743,7 @@
                     $(containerSelector).html(html);
                 }
 
-                if (areaName === 'MOWER') {
+                if (areaName === 'MOWER' || areaName === 'DAIICHI') {
                     renderCards(unitCount, '#unitTypesContainer_' + areaId);
                     renderCards(mowerCount, '#mowerTypesContainer_' + areaId);
                     renderCards(collectorCount, '#collectorTypesContainer_' + areaId);

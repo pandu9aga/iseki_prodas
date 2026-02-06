@@ -692,31 +692,64 @@ class ReportController extends Controller
             // Sheet UNIT
             $sheetUnit = $spreadsheet->getActiveSheet();
             $sheetUnit->setTitle('UNIT');
-            $plansUnit = $this->getRegularAreaData($areaId, $selectedDate->toDateString(), 'unit');
+            $plansUnit = $this->getRegularAreaData($areaId, $selectedDate->toDateString(), 'unit', $areaName);
             $this->populateSheet($sheetUnit, $plansUnit, $areaName . ' - UNIT', $selectedDate, $areaId);
 
             // Sheet MOCOL
             $sheetMocol = $spreadsheet->createSheet();
             $sheetMocol->setTitle('MOCOL');
-            $plansMocol = $this->getRegularAreaData($areaId, $selectedDate->toDateString(), 'mocol');
+            $plansMocol = $this->getRegularAreaData($areaId, $selectedDate->toDateString(), 'mocol', $areaName);
             $this->populateSheet($sheetMocol, $plansMocol, $areaName . ' - MOCOL', $selectedDate, $areaId);
             
             $spreadsheet->setActiveSheetIndex(0);
+        } elseif ($areaName === 'MOWER') {
+            // SINGLE SHEET FOR MOWER (Stacked)
+            $sheet = $spreadsheet->getActiveSheet();
+            $sheet->setTitle('MOWER REPORT');
+
+            // 1. UNIT Data
+            $plansUnit = $this->getRegularAreaData($areaId, $selectedDate->toDateString(), 'unit', $areaName);
+            $nextRow = $this->populateSheet($sheet, $plansUnit, $areaName . ' - UNIT', $selectedDate, $areaId);
+
+            // 2. MOWER Data
+            // Add some spacing
+            $nextRow += 2; 
+            $plansMower = $this->getRegularAreaData($areaId, $selectedDate->toDateString(), 'mower', $areaName);
+            $nextRow = $this->populateSheet($sheet, $plansMower, $areaName . ' - MOWER', $selectedDate, $areaId, $nextRow);
+
+            // 3. COLLECTOR Data
+            // Add some spacing
+            $nextRow += 2;
+            $plansCollector = $this->getRegularAreaData($areaId, $selectedDate->toDateString(), 'collector', $areaName);
+            $this->populateSheet($sheet, $plansCollector, $areaName . ' - COLLECTOR', $selectedDate, $areaId, $nextRow);
+            
+            $spreadsheet->setActiveSheetIndex(0);
+        } elseif ($areaId == 999) {
+            // SINGLE SHEET FOR DAIICHI (Stacked) - Similar to MOWER
+            $sheet = $spreadsheet->getActiveSheet();
+            $sheet->setTitle('DAIICHI REPORT');
+
+            // 1. UNIT Data
+            $plansUnit = $this->getDaiichiData($selectedDate->toDateString(), 'unit');
+            $nextRow = $this->populateSheet($sheet, $plansUnit, 'DAIICHI - UNIT', $selectedDate, $areaId);
+
+            // 2. MOWER Data
+            // Add some spacing
+            $nextRow += 2;
+            $plansMower = $this->getDaiichiData($selectedDate->toDateString(), 'mower');
+            $nextRow = $this->populateSheet($sheet, $plansMower, 'DAIICHI - MOWER', $selectedDate, $areaId, $nextRow);
+
+            // 3. COLLECTOR Data
+            // Add some spacing
+            $nextRow += 2;
+            $plansCollector = $this->getDaiichiData($selectedDate->toDateString(), 'collector');
+            $this->populateSheet($sheet, $plansCollector, 'DAIICHI - COLLECTOR', $selectedDate, $areaId, $nextRow);
+
+            $spreadsheet->setActiveSheetIndex(0);
         } else {
             // Existing logic for other areas
-            // DAIICHI / MAIN LINE / Regular Areas
-            if ($areaId == 999) {
-                $endDate = $selectedDate->copy()->endOfDay();
-                $plans = Plan::select([
-                    'Type_Plan', 'Sequence_No_Plan', 'Production_Date_Plan', 'Model_Name_Plan', 'Production_No_Plan',
-                    'Chasis_No_Plan', 'Model_Label_Plan', 'Safety_Frame_Label_Plan', 'Model_Mower_Plan', 'Mower_No_Plan',
-                    'Model_Collector_Plan', 'Collector_No_Plan', 'Daiichi_Record'
-                ])
-                ->whereNotNull('Daiichi_Record')
-                ->whereBetween('Daiichi_Record', [$selectedDate, $endDate])
-                ->orderBy('Daiichi_Record', 'asc')
-                ->get();
-            } elseif ($areaName === 'MAIN LINE') {
+            // MAIN LINE / Regular Areas
+            if ($areaName === 'MAIN LINE') {
                 $endDate = $selectedDate->copy()->endOfDay();
                 $plans = Plan::select([
                     'Type_Plan', 'Sequence_No_Plan', 'Production_Date_Plan', 'Model_Name_Plan', 'Production_No_Plan',
@@ -728,7 +761,7 @@ class ReportController extends Controller
                 ->orderBy('Lineoff_Plan', 'asc')
                 ->get();
             } else {
-                $plans = $this->getRegularAreaData($areaId, $selectedDate->toDateString());
+                $plans = $this->getRegularAreaData($areaId, $selectedDate->toDateString(), null, $areaName);
             }
 
             $sheet = $spreadsheet->getActiveSheet();
@@ -954,7 +987,7 @@ class ReportController extends Controller
     private function applyTableBorder($sheet, $range) {
         $sheet->getStyle($range)->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
     }
-    private function getRegularAreaData($areaId, $scanDate, $scanType = null)
+    private function getRegularAreaData($areaId, $scanDate, $scanType = null, $areaName = null)
     {
         $plansSubquery = Plan::select(
             'Sequence_No_Plan',
@@ -1020,30 +1053,77 @@ class ReportController extends Controller
         );
 
         if ($scanType) {
-            if ($scanType === 'unit') {
-                $query->whereColumn('t.Name_Tractor', '=', 'plans.Model_Name_Plan')
-                    ->where(function($q) {
-                        $q->where(function($q2) {
-                            $q2->whereRaw('plans.Model_Mower_Plan IS NULL')
-                               ->orWhereRaw('t.Name_Tractor != plans.Model_Mower_Plan');
-                        })
-                        ->where(function($q2) {
-                            $q2->whereRaw('plans.Model_Collector_Plan IS NULL')
-                               ->orWhereRaw('t.Name_Tractor != plans.Model_Collector_Plan');
+            if ($areaName === 'LINE A') {
+                if ($scanType === 'unit') {
+                    $query->whereColumn('t.Name_Tractor', '=', 'plans.Model_Name_Plan')
+                        ->where(function($q) {
+                            $q->where(function($q2) {
+                                $q2->whereRaw('plans.Model_Mower_Plan IS NULL')
+                                ->orWhereRaw('t.Name_Tractor != plans.Model_Mower_Plan');
+                            })
+                            ->where(function($q2) {
+                                $q2->whereRaw('plans.Model_Collector_Plan IS NULL')
+                                ->orWhereRaw('t.Name_Tractor != plans.Model_Collector_Plan');
+                            });
                         });
+                } elseif ($scanType === 'mocol') {
+                    $query->where(function($q) {
+                        $q->whereColumn('t.Name_Tractor', '=', 'plans.Model_Mower_Plan')
+                        ->orWhereColumn('t.Name_Tractor', '=', 'plans.Model_Collector_Plan');
                     });
-            } elseif ($scanType === 'mocol') {
-                $query->where(function($q) {
-                    $q->whereColumn('t.Name_Tractor', '=', 'plans.Model_Mower_Plan')
-                      ->orWhereColumn('t.Name_Tractor', '=', 'plans.Model_Collector_Plan');
-                });
+                }
+            } elseif ($areaName === 'MOWER') {
+                if ($scanType === 'unit') {
+                    // Unit: Sequence No does NOT contain 'T' or 't'
+                    $query->where('scans.Sequence_No_Plan', 'NOT REGEXP', '[Tt]');
+                } elseif ($scanType === 'mower') {
+                    // Mower: Sequence No contains 'T'/'t' AND Model matches Mower Model
+                    $query->where('scans.Sequence_No_Plan', 'REGEXP', '[Tt]')
+                        ->whereColumn('plans.Model_Name_Plan', '=', 'plans.Model_Mower_Plan');
+                } elseif ($scanType === 'collector') {
+                    // Collector: Sequence No contains 'T'/'t' AND Model matches Collector Model
+                    $query->where('scans.Sequence_No_Plan', 'REGEXP', '[Tt]')
+                         ->whereColumn('plans.Model_Name_Plan', '=', 'plans.Model_Collector_Plan');
+                }
             }
         }
 
         return $query->orderBy('Time_Scan', 'desc')->get();
     }
 
-    private function populateSheet($sheet, $plans, $areaName, $selectedDate, $areaId)
+    private function getDaiichiData($date, $type = null)
+    {
+        $query = Plan::select([
+            'Type_Plan', 'Sequence_No_Plan', 'Production_Date_Plan', 'Model_Name_Plan', 'Production_No_Plan',
+            'Chasis_No_Plan', 'Model_Label_Plan', 'Safety_Frame_Label_Plan', 'Model_Mower_Plan', 'Mower_No_Plan',
+            'Model_Collector_Plan', 'Collector_No_Plan', 'Daiichi_Record'
+        ])
+        ->whereNotNull('Daiichi_Record')
+        ->whereDate('Daiichi_Record', $date);
+
+        if ($type === 'unit') {
+             $query->where('Sequence_No_Plan', 'NOT REGEXP', '[Tt]');
+        } elseif ($type === 'mower') {
+             $query->where('Sequence_No_Plan', 'REGEXP', '[Tt]')
+                   ->whereColumn('Model_Name_Plan', 'Model_Mower_Plan');
+        } elseif ($type === 'collector') {
+             $query->where('Sequence_No_Plan', 'REGEXP', '[Tt]')
+                   ->whereColumn('Model_Name_Plan', 'Model_Collector_Plan');
+        }
+
+        $results = $query->orderBy('Daiichi_Record', 'desc')->get();
+
+        // Transform data to match populateSheet requirements (add Time_Scan, Assigned_Hour_Scan)
+        $results->transform(function ($item) {
+            $item->Time_Scan = $item->Daiichi_Record;
+            $item->Assigned_Hour_Scan = '-';
+            return $item;
+        });
+
+        return $results;
+    }
+
+    private function populateSheet($sheet, $plans, $areaName, $selectedDate, $areaId, $startRow = 2)
     {
         $totalPlans = $plans->count();
         $typeCounts = $plans->groupBy('Type_Plan')->map(function ($group) {
@@ -1052,7 +1132,7 @@ class ReportController extends Controller
         $sortedTypeCounts = $typeCounts->toArray();
         ksort($sortedTypeCounts);
 
-        $currentRow = 2;
+        $currentRow = $startRow;
 
         // 0. Judul Area
         $sheet->setCellValue('B' . $currentRow, 'Area Scan:');
@@ -1137,15 +1217,39 @@ class ReportController extends Controller
         }
         $lastDataRow = $currentRow - 1;
 
-        $this->applyTableBorder($sheet, 'A' . $tableHeaderRow . ':' . $lastHeaderCol . $lastDataRow);
-        $sheet->setAutoFilter('A' . $tableHeaderRow . ':' . $lastHeaderCol . $lastDataRow);
+        if ($totalPlans > 0) {
+            $this->applyTableBorder($sheet, 'A' . $tableHeaderRow . ':' . $lastHeaderCol . $lastDataRow);
+            
+            // Use Excel Table (ListObject) instead of AutoFilter to support multiple filtered tables on one sheet
+            $tableRange = 'A' . $tableHeaderRow . ':' . $lastHeaderCol . $lastDataRow;
+            $tableName = 'Table_' . preg_replace('/[^a-zA-Z0-9]/', '', $areaName) . '_' . $startRow; // Unique name based on Area and Row
+            
+            $table = new \PhpOffice\PhpSpreadsheet\Worksheet\Table();
+            $table->setName($tableName);
+            $table->setShowHeaderRow(true);
+            $table->setRange($tableRange);
+            $table->setStyle((new \PhpOffice\PhpSpreadsheet\Worksheet\Table\TableStyle())->setTheme(\PhpOffice\PhpSpreadsheet\Worksheet\Table\TableStyle::TABLE_STYLE_LIGHT1));
+            $sheet->addTable($table);
+        }
 
         foreach (range('A', $lastHeaderCol) as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
         // 6. Rekap Tipe
-        $rekapHeaderRow = 5;
+        $rekapHeaderRow = 5 + ($startRow - 2); // Calculate relative position? No, we should use currentRow + spacing
+        // Wait, Rekap Tipe was previously at fixed position or calculated?
+        // In previous code: $rekapHeaderRow = 5; which was likely overlapping or fixed.
+        // It was fixed at row 5, col P/Q previously? Let's check previous implementation.
+        // Previous: $rekapHeaderRow = 5.
+        // If we stack tables, we can't put rekap at fixed row 5 if it's side-by-side. 
+        // But rekap is at `lastHeaderCol + 2`.
+        // If tables are stacked, the right side is free for ALL tables, BUT typically rekap is per table.
+        // If we want rekap for EACH table, we must update $rekapHeaderRow to be relative to that table's header/top.
+        // Let's place it at the top of EACH table block.
+        
+        $rekapHeaderRow = $startRow + 3; // Align with "Total Keseluruhan Data" or similar
+
         $rekapStartCol = chr(ord($lastHeaderCol) + 2);
         $rekapEndCol = chr(ord($rekapStartCol) + 1);
         $sheet->setCellValue($rekapStartCol . $rekapHeaderRow, 'Type:');
@@ -1170,6 +1274,8 @@ class ReportController extends Controller
         foreach ([$rekapStartCol, $rekapEndCol] as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
+
+        return $currentRow; // Return new current row for next table
     }
     // --- AKHIR FUNGSI BANTU ---
 
