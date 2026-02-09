@@ -241,7 +241,7 @@ class AreaController extends Controller
             $query->whereDate('Lineoff_Plan', $request->lineoff_date);
         }
 
-        $query->orderBy('Lineoff_Plan', 'desc');
+        // $query->orderBy('Lineoff_Plan', 'desc');
 
         $results = $query->get();
 
@@ -416,7 +416,9 @@ class AreaController extends Controller
             $modelName = $plan->Model_Name_Plan;
 
             // 2. Cari Tractor di database EFFICIENCY berdasarkan Name_Tractor = Model_Name_Plan
-            $tractor = Efficiency_Tractor::where('Name_Tractor', $modelName)->first();
+            $tractor = Efficiency_Tractor::where('Name_Tractor', $modelName)
+                        ->where('Id_Area', $idArea)
+                        ->first();
 
             if (!$tractor) {
                 return redirect()->back()->with('error', 'Jam Tractor belum diinputkan.');

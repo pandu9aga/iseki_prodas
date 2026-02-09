@@ -257,7 +257,7 @@
                 deferRender: true,
                 pageLength: 50,
                 order: [
-                    [6, 'desc']
+                    [7, 'desc']
                 ],
                 ajax: {
                     url: "{{ route('api.area.mainline.reports.data') }}",
