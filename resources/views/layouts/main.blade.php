@@ -173,6 +173,11 @@
                     <div data-i18n="Missing">Missing</div>
                   </a>
                 </li>
+                <li class="menu-item {{ (isset($sub) && $sub === 'daisha') ? 'active' : '' }}">
+                  <a href="{{ route('report.daisha') }}" class="menu-link">
+                    <div data-i18n="Daisha Set">Daisha Set</div>
+                  </a>
+                </li>
               </ul>
             </li>
             <li class="menu-item {{ $page === 'plan' ? 'active' : '' }}">

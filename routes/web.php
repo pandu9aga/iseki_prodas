@@ -66,6 +66,9 @@ Route::middleware(AdminMiddleware::class)->group(function () {
 
     Route::get('/api/admin/area/all-reports-data', [ReportController::class, 'getAllAreaReports'])->name('api.admin.area.all.reports.data');
     Route::get('/report/area/all/export', [ReportController::class, 'exportAllAreaReport'])->name('admin.area.all.report.export');
+
+    Route::get('/report/daisha', [ReportController::class, 'daishaReport'])->name('report.daisha');
+    Route::get('/api/admin/daisha/reports-data', [ReportController::class, 'getDaishaReports'])->name('api.admin.daisha.reports.data');
 });
 
 Route::middleware(AuthMiddleware::class)->group(function () {
@@ -79,6 +82,10 @@ Route::middleware(AuthMiddleware::class)->group(function () {
     Route::get('/api/area/daiichi/reports-data', [AreaController::class, 'getDaiichiReports'])->name('api.area.daiichi.reports.data');
     Route::post('/home/daiichi/scan', [AreaController::class, 'scanDaiichiStore'])->name('area.daiichi.scan.store');
     Route::get('/area/daiichi/report/export', [AreaController::class, 'exportDaiichiReport'])->name('area.daiichi.report.export');
+
+    Route::get('/api/area/daisha/reports-data', [AreaController::class, 'getDaishaReports'])->name('api.area.daisha.reports.data');
+    Route::post('/home/daisha/scan', [AreaController::class, 'scanDaishaStore'])->name('area.daisha.scan.store');
+    Route::get('/area/daisha/report/export', [AreaController::class, 'exportDaishaReport'])->name('area.daisha.report.export');
 });
 
 Route::get('/debug-auth', function () {

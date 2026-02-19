@@ -451,13 +451,17 @@ class ReportController extends Controller
         return response()->download($filePath)->deleteFileAfterSend(true);
     }
 
-    public function areaReport()
+    public function areaReport(Request $request)
     {
         $page = "report";
         $sub = "area";
 
         $Id_User = session('Id_User');
         $user = User::find($Id_User);
+
+        // Ambil area dan tanggal terpilih dari request
+        $selectedArea = $request->query('area_id', null);
+        $selectedDate = $request->query('scan_date', Carbon::today()->toDateString());
 
         // Ambil semua area dari Efficiency_Area dan urutkan sesuai permintaan
         $desiredOrder = ['TRANSMISI', 'SUB ENGINE', 'LINE A', 'LINE B', 'SUB ASSY', 'MAIN LINE', 'INSPEKSI', 'MOWER'];
@@ -468,7 +472,7 @@ class ReportController extends Controller
                 return $pos === false ? 99 : $pos;
             });
 
-        return view('admins.reports.area', compact('page', 'sub', 'user', 'areas'));
+        return view('admins.reports.area', compact('page', 'sub', 'user', 'areas', 'selectedArea', 'selectedDate'));
     }
 
     public function getAreaReports(Request $request)
@@ -1279,4 +1283,56 @@ class ReportController extends Controller
     }
     // --- AKHIR FUNGSI BANTU ---
 
+    public function daishaReport()
+    {
+        $page = "report";
+        $sub = "daisha";
+
+        $Id_User = session('Id_User');
+        $user = User::find($Id_User);
+
+        return view('admins.reports.daisha', compact('page', 'sub', 'user'));
+    }
+
+    public function getDaishaReports(Request $request)
+    {
+        $query = Plan::select([
+            'Id_Plan',
+            'Type_Plan',
+            'Sequence_No_Plan',
+            'Production_Date_Plan',
+            'Model_Name_Plan',
+            'Production_No_Plan',
+            'Chasis_No_Plan',
+            'Model_Label_Plan',
+            'Safety_Frame_Label_Plan',
+            'Model_Mower_Plan',
+            'Mower_No_Plan',
+            'Model_Collector_Plan',
+            'Collector_No_Plan',
+            'Daisha_Record',
+            'Daisha_Status'
+        ])
+        ->whereNotNull('Daisha_Record');
+
+        if ($request->filled('scan_date')) {
+            $query->whereDate('Daisha_Record', $request->scan_date);
+        } else {
+            $query->whereDate('Daisha_Record', Carbon::today()->toDateString());
+        }
+
+        $query->orderBy('Daisha_Record', 'desc');
+
+        return DataTables::of($query)
+            ->addIndexColumn()
+            ->addColumn('status', function($row) {
+                $statusData = json_decode($row->Daisha_Status, true);
+                return $statusData['status'] ?? '-';
+            })
+            ->addColumn('remark', function($row) {
+                $statusData = json_decode($row->Daisha_Status, true);
+                return $statusData['remark'] ?? '-';
+            })
+            ->make(true);
+    }
 }

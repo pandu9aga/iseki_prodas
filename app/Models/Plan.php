@@ -31,6 +31,8 @@ class Plan extends Model
         'Record_Plan',
         'Lineoff_Plan',
         'Status_Plan',
+        'Daisha_Record',
+        'Daisha_Status',
         'Daiichi_Record'
     ];
 

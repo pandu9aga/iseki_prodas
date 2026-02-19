@@ -16,6 +16,7 @@ use App\Models\Efficiency_Tractor;
 use Yajra\DataTables\Facades\DataTables;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Illuminate\Support\Facades\Log;
 
 class AreaController extends Controller
 {
@@ -33,6 +34,30 @@ class AreaController extends Controller
                             ->count();
 
             return view('areas.daiichi', compact('selectedDate', 'scanCount'));
+        }
+
+        // Jika area adalah DAISHA SET, tampilkan view daisha
+        if ($areaName === 'DAISHA SET') {
+            $selectedDate = $request->query('scan_date', Carbon::today()->toDateString());
+
+            $plans = Plan::whereNotNull('Daisha_Record')
+                            ->whereDate('Daisha_Record', $selectedDate)
+                            ->get();
+
+            $scanCount = $plans->count();
+            $okCount = 0;
+            $ngCount = 0;
+
+            foreach ($plans as $p) {
+                $status = json_decode($p->Daisha_Status, true);
+                if (($status['status'] ?? '') === 'OK') {
+                    $okCount++;
+                } else {
+                    $ngCount++;
+                }
+            }
+
+            return view('areas.daisha', compact('selectedDate', 'scanCount', 'okCount', 'ngCount'));
         }
 
         // Jika area adalah Main Line, tampilkan view mainline
@@ -1275,7 +1300,12 @@ class AreaController extends Controller
             $sheet->setCellValue($colIndex . $currentRow, $plan->Production_No_Plan); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
             $sheet->setCellValue($colIndex . $currentRow, $plan->Production_Date_Plan); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
             
-            $scanTime = $plan->Daiichi_Record ?? '-'; // Use Daiichi_Record
+            $scanTime = '-';
+            if ($areaName === 'DAIICHI') {
+                $scanTime = $plan->Daiichi_Record ?? '-';
+            } elseif ($areaName === 'DAISHA SET') {
+                $scanTime = $plan->Daisha_Record ?? '-';
+            }
             $sheet->setCellValue($colIndex . $currentRow, $scanTime); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
             
             $sheet->setCellValue($colIndex . $currentRow, $plan->Chasis_No_Plan); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
@@ -1338,5 +1368,165 @@ class AreaController extends Controller
         }
 
         return $currentRow;
+    }
+
+    public function getDaishaReports(Request $request)
+    {
+        $selectedDate = $request->query('scan_date', Carbon::today()->toDateString());
+
+        $query = Plan::select([
+            'Id_Plan',
+            'Type_Plan',
+            'Sequence_No_Plan',
+            'Production_Date_Plan',
+            'Model_Name_Plan',
+            'Production_No_Plan',
+            'Chasis_No_Plan',
+            'Model_Label_Plan',
+            'Safety_Frame_Label_Plan',
+            'Model_Mower_Plan',
+            'Mower_No_Plan',
+            'Model_Collector_Plan',
+            'Collector_No_Plan',
+            'Daisha_Record',
+            'Daisha_Status'
+        ])
+        ->whereNotNull('Daisha_Record')
+        ->whereDate('Daisha_Record', $selectedDate);
+
+        if ($request->has('search_only') && $request->has('sequence_no') && $request->has('production_date')) {
+            $query->where('Sequence_No_Plan', $request->sequence_no)
+                  ->where('Production_Date_Plan', $request->production_date);
+        }
+
+        return DataTables::of($query)
+            ->addIndexColumn()
+            ->addColumn('status', function($row) {
+                $statusData = json_decode($row->Daisha_Status, true);
+                return $statusData['status'] ?? '-';
+            })
+            ->addColumn('remark', function($row) {
+                $statusData = json_decode($row->Daisha_Status, true);
+                return $statusData['remark'] ?? '-';
+            })
+            ->make(true);
+    }
+
+    public function scanDaishaStore(Request $request)
+    {
+        $request->validate([
+            'sequence_no' => 'required|string|max:255',
+            'production_date' => 'required',
+            'status' => 'nullable|string',
+            'remark' => 'nullable|string',
+            'is_stay' => 'nullable|boolean'
+        ]);
+
+        $sequenceNo = $request->input('sequence_no');
+        $productionDate = $request->input('production_date');
+        $remark = $request->input('remark');
+        $isStay = $request->input('is_stay', false);
+
+        $sequenceNoFormatted = str_pad($sequenceNo, 5, '0', STR_PAD_LEFT);
+        $timestampNow = Carbon::now();
+
+        try {
+            $plan = Plan::where('Sequence_No_Plan', $sequenceNoFormatted)
+                ->where('Production_Date_Plan', $productionDate)
+                ->first();
+
+            if (!$plan) {
+                return response()->json(['status' => 'error', 'message' => "Plan tidak ditemukan."], 404);
+            }
+
+            // Check areas: TRANSMISI (2), SUB ENGINE (6), LINE A (3), LINE B (4)
+            $requiredAreas = [
+                2 => 'TRANSMISI',
+                6 => 'SUB ENGINE',
+                3 => 'LINE A',
+                4 => 'LINE B'
+            ];
+
+            $missingAreas = [];
+            foreach ($requiredAreas as $idArea => $nameArea) {
+                // KHUSUS DAISHA SET: Pengecualian scan berdasarkan Type_Plan
+                // 1. TRANSMISI: SXG2, SXG2日本, GC, TXGS tidak perlu cek
+                if ($idArea == 2 && in_array(strtoupper($plan->Type_Plan), ['SXG2', 'SXG2日本', 'GC', 'TXGS'])) {
+                    continue;
+                }
+                // 2. SUB ENGINE: SXG3, SXG2, SXG2日本 tidak perlu cek
+                if ($idArea == 6 && in_array(strtoupper($plan->Type_Plan), ['SXG3', 'SXG2', 'SXG2日本'])) {
+                    continue;
+                }
+
+                $scanned = Efficiency_Scan::where('Sequence_No_Plan', $sequenceNoFormatted)
+                    ->where('Production_Date_Plan', $productionDate)
+                    ->where('Id_Area', $idArea)
+                    ->exists();
+                
+                if (!$scanned) {
+                    $missingAreas[] = $nameArea;
+                }
+            }
+
+            if (!$isStay && !empty($missingAreas)) {
+                return response()->json([
+                    'status' => 'NG',
+                    'message' => 'NG: Area berikut belum scan: ' . implode(', ', $missingAreas)
+                ]);
+            }
+
+            $currentStatus = !empty($missingAreas) ? 'NG' : 'OK';
+            $statusJson = json_encode([
+                'status' => $currentStatus,
+                'remark' => $remark ?? ''
+            ]);
+
+            $plan->update([
+                'Daisha_Record' => $timestampNow,
+                'Daisha_Status' => $statusJson
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Scan DAISHA SET berhasil disimpan dengan status ' . $currentStatus
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Daisha Scan Store Error: ' . $e->getMessage());
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function exportDaishaReport(Request $request)
+    {
+        $selectedDate = Carbon::parse($request->query('scan_date', Carbon::today()->toDateString()))->startOfDay();
+        $plans = $this->getDaishaData($selectedDate->toDateString());
+        
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $this->populateSheet($sheet, $plans, 'DAISHA SET', $selectedDate);
+        
+        $writer = new Xlsx($spreadsheet);
+        $fileName = 'Report_DAISHA_SET_' . $selectedDate->format('Y-m-d') . '.xlsx';
+        
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $fileName . '"');
+        header('Cache-Control: max-age=0');
+        
+        $writer->save('php://output');
+        exit;
+    }
+
+    private function getDaishaData($date, $type = null)
+    {
+        $query = Plan::whereNotNull('Daisha_Record')
+                    ->whereDate('Daisha_Record', $date);
+
+        if ($type) {
+            $query->where('Type_Plan', $type);
+        }
+
+        return $query->orderBy('Daisha_Record', 'desc')->get();
     }
 }

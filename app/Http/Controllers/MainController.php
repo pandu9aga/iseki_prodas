@@ -79,6 +79,13 @@ class MainController extends Controller
             return redirect()->route('home');
         }
 
+        // Cek jika login DAISHA SET (hardcoded)
+        if ($request->Name_Area === 'DAISHA SET' && $request->Password_Area === 'daishaset123') {
+            session(['Id_Area' => 888]); // ID khusus untuk DAISHA SET
+            session(['Name_Area' => 'DAISHA SET']);
+            return redirect()->route('home');
+        }
+
         // Cari area berdasarkan nama area (untuk area lain)
         $area = Efficiency_Area::where('Name_Area', $request->Name_Area)->first();
 

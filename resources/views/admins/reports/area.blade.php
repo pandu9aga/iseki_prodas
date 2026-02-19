@@ -12,27 +12,33 @@
                         <!-- Nav Tabs untuk Area -->
                         <ul class="nav nav-tabs" id="areaTabs" role="tablist">
                             @foreach ($areas as $area)
+                                @php
+                                    $isActive = ($selectedArea && $selectedArea == $area->Id_Area) || (!$selectedArea && $loop->first);
+                                @endphp
                                 <li class="nav-item" role="presentation">
-                                    <button class="nav-link {{ $loop->first ? 'active' : '' }}"
-                                        id="area-{{ $area->Id_Area }}-tab" data-bs-toggle="tab"
-                                        data-bs-target="#area-{{ $area->Id_Area }}" type="button" role="tab"
-                                        aria-controls="area-{{ $area->Id_Area }}"
-                                        aria-selected="{{ $loop->first ? 'true' : 'false' }}">
+                                    <button class="nav-link {{ $isActive ? 'active' : '' }}" id="area-{{ $area->Id_Area }}-tab"
+                                        data-bs-toggle="tab" data-bs-target="#area-{{ $area->Id_Area }}" type="button"
+                                        role="tab" aria-controls="area-{{ $area->Id_Area }}"
+                                        aria-selected="{{ $isActive ? 'true' : 'false' }}">
                                         {{ $area->Name_Area }}
                                     </button>
                                 </li>
                             @endforeach
                             <!-- Tab DAIICHI (Hardcoded) -->
                             <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="area-999-tab" data-bs-toggle="tab" data-bs-target="#area-999"
-                                    type="button" role="tab" aria-controls="area-999" aria-selected="false">
+                                <button class="nav-link {{ $selectedArea == '999' ? 'active' : '' }}" id="area-999-tab"
+                                    data-bs-toggle="tab" data-bs-target="#area-999" type="button" role="tab"
+                                    aria-controls="area-999"
+                                    aria-selected="{{ $selectedArea == '999' ? 'true' : 'false' }}">
                                     DAIICHI
                                 </button>
                             </li>
                             <!-- Tab ALL (Hardcoded) -->
                             <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="area-all-tab" data-bs-toggle="tab" data-bs-target="#area-all"
-                                    type="button" role="tab" aria-controls="area-all" aria-selected="false">
+                                <button class="nav-link {{ $selectedArea == 'all' ? 'active' : '' }}" id="area-all-tab"
+                                    data-bs-toggle="tab" data-bs-target="#area-all" type="button" role="tab"
+                                    aria-controls="area-all"
+                                    aria-selected="{{ $selectedArea == 'all' ? 'true' : 'false' }}">
                                     ALL
                                 </button>
                             </li>
@@ -42,9 +48,11 @@
                         <!-- Tab Content -->
                         <div class="tab-content" id="areaTabContent">
                             @foreach ($areas as $area)
-                                <div class="tab-pane fade {{ $loop->first ? 'show active' : '' }}"
-                                    id="area-{{ $area->Id_Area }}" role="tabpanel"
-                                    aria-labelledby="area-{{ $area->Id_Area }}-tab">
+                                @php
+                                    $isActive = ($selectedArea && $selectedArea == $area->Id_Area) || (!$selectedArea && $loop->first);
+                                @endphp
+                                <div class="tab-pane fade {{ $isActive ? 'show active' : '' }}" id="area-{{ $area->Id_Area }}"
+                                    role="tabpanel" aria-labelledby="area-{{ $area->Id_Area }}-tab">
 
                                     <!-- Filter, Export, dan Tractor Types Card -->
                                     <div class="row mb-3">
@@ -57,8 +65,7 @@
                                                     <div class="input-group">
                                                         <input type="date" name="scan_date" id="scan_date_{{ $area->Id_Area }}"
                                                             class="form-control scan_date_input"
-                                                            data-area-id="{{ $area->Id_Area }}"
-                                                            value="{{ Carbon\Carbon::today()->toDateString() }}">
+                                                            data-area-id="{{ $area->Id_Area }}" value="{{ $selectedDate }}">
                                                         <button type="button" class="btn btn-outline-primary apply-date-btn"
                                                             data-area-id="{{ $area->Id_Area }}">
                                                             Apply
@@ -324,7 +331,8 @@
                             @endforeach
 
                             <!-- Tab Content untuk DAIICHI (Hardcoded) -->
-                            <div class="tab-pane fade" id="area-999" role="tabpanel" aria-labelledby="area-999-tab">
+                            <div class="tab-pane fade {{ $selectedArea == '999' ? 'show active' : '' }}" id="area-999"
+                                role="tabpanel" aria-labelledby="area-999-tab">
 
                                 <!-- Filter, Export, dan Tractor Types Card -->
                                 <div class="row mb-3">
@@ -336,7 +344,7 @@
                                                 <div class="input-group">
                                                     <input type="date" name="scan_date" id="scan_date_999"
                                                         class="form-control scan_date_input" data-area-id="999"
-                                                        value="{{ Carbon\Carbon::today()->toDateString() }}">
+                                                        value="{{ $selectedDate }}">
                                                     <button type="button" class="btn btn-outline-primary apply-date-btn"
                                                         data-area-id="999">
                                                         Apply
@@ -436,7 +444,8 @@
                             </div> <!-- tab-pane DAIICHI -->
 
                             <!-- Tab Content untuk ALL (Hardcoded) -->
-                            <div class="tab-pane fade" id="area-all" role="tabpanel" aria-labelledby="area-all-tab">
+                            <div class="tab-pane fade {{ $selectedArea == 'all' ? 'show active' : '' }}" id="area-all"
+                                role="tabpanel" aria-labelledby="area-all-tab">
                                 <div class="row mb-3">
                                     <div class="col-md-12">
                                         <div class="card">
@@ -759,14 +768,10 @@
             // Apply date filter
             $('.apply-date-btn').on('click', function () {
                 var areaId = $(this).data('area-id');
-                var areaName = $(this).closest('.tab-pane').find('.export-btn').data('area-name');
+                var scanDate = $('#scan_date_' + areaId).val();
 
-                if (areaName === 'LINE A') {
-                    if (tables['unit_' + areaId]) tables['unit_' + areaId].draw();
-                    if (tables['mocol_' + areaId]) tables['mocol_' + areaId].draw();
-                } else {
-                    if (tables[areaId]) tables[areaId].draw();
-                }
+                // Refresh page with area_id and scan_date to preserve tab
+                window.location.href = "{{ route('report.area') }}?area_id=" + areaId + "&scan_date=" + scanDate;
             });
 
 
@@ -823,7 +828,8 @@
             }
 
             $('#apply-date-all').on('click', function () {
-                tables['all'].draw();
+                var prodDate = $('#production_date_all').val();
+                window.location.href = "{{ route('report.area') }}?area_id=all&scan_date=" + prodDate;
             });
 
             $('#export-all-btn').on('click', function (e) {
