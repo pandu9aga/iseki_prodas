@@ -88,7 +88,8 @@ class RuleController extends Controller
             'astra_main_line_end',
             'astra_mower_collector',
             'astra_mower_collector_end',
-            'oiler'
+            'oiler',
+            'parcom_joint_universal'
         ];
 
         if ($ruleRule) {
@@ -163,7 +164,8 @@ class RuleController extends Controller
             'astra_main_line_end',
             'astra_mower_collector',
             'astra_mower_collector_end',
-            'oiler'
+            'oiler',
+            'parcom_joint_universal'
         ];
 
         // Proses Rule_Rule
@@ -248,7 +250,8 @@ class RuleController extends Controller
             'astra_main_line_end',
             'astra_mower_collector',
             'astra_mower_collector_end',
-            'oiler'
+            'oiler',
+            'parcom_joint_universal'
         ];
 
         try {

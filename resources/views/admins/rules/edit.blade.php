@@ -57,7 +57,8 @@
                                         'astra_main_line_end',
                                         'astra_mower_collector',
                                         'astra_mower_collector_end',
-                                        'oiler'
+                                        'oiler',
+                                        'parcom_joint_universal'
                                     ] as $option)
                                         <div class="form-check">
                                             <input class="form-check-input rule-checkbox" 
