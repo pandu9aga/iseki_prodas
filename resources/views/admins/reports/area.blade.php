@@ -561,7 +561,15 @@
 
             // Define shared columns for all tables
             var columns = [
-                { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
+                { 
+                    data: null, 
+                    name: 'DT_RowIndex', 
+                    orderable: false, 
+                    searchable: false,
+                    render: function (data, type, row, meta) {
+                        return meta.settings.fnRecordsDisplay() - meta.row - meta.settings._iDisplayStart;
+                    }
+                },
                 { data: 'Sequence_No_Plan', name: 'scans.Sequence_No_Plan' },
                 { data: 'Model_Name_Plan', name: 'plans.Model_Name_Plan' },
                 {
@@ -800,7 +808,15 @@
                         }
                     },
                     columns: [
-                        { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
+                        { 
+                            data: null, 
+                            name: 'DT_RowIndex', 
+                            orderable: false, 
+                            searchable: false,
+                            render: function (data, type, row, meta) {
+                                return meta.settings.fnRecordsDisplay() - meta.row - meta.settings._iDisplayStart;
+                            }
+                        },
                         { data: 'Production_Date_Plan', name: 'Production_Date_Plan' },
                         { data: 'Sequence_No_Plan', name: 'Sequence_No_Plan' },
                         {

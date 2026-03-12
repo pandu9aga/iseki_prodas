@@ -895,8 +895,9 @@ class ReportController extends Controller
         $this->applyPinkHeaderStyle($sheet, 'A1:N1');
 
         $rowNum = 2;
+        $no = $plans->count();
         foreach ($plans as $index => $plan) {
-            $sheet->setCellValue('A' . $rowNum, $index + 1);
+            $sheet->setCellValue('A' . $rowNum, $no--);
             $sheet->setCellValue('B' . $rowNum, $plan->Production_Date_Plan);
             $sheet->setCellValue('C' . $rowNum, $plan->Sequence_No_Plan);
             $sheet->setCellValue('D' . $rowNum, $plan->Type_Plan);
@@ -1191,7 +1192,7 @@ class ReportController extends Controller
         $currentRow++;
 
         // 5. Isi Data Tabel
-        $no = 1;
+        $no = (is_array($plans) ? count($plans) : $plans->count());
         foreach ($plans as $plan) {
             $colIndex = 'A';
             $sheet->setCellValue($colIndex . $currentRow, $no); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('center'); $colIndex++;
@@ -1216,7 +1217,7 @@ class ReportController extends Controller
             $sheet->setCellValue($colIndex . $currentRow, $plan->Mower_No_Plan); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
             $sheet->setCellValue($colIndex . $currentRow, $plan->Model_Collector_Plan); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
             $sheet->setCellValue($colIndex . $currentRow, $plan->Collector_No_Plan); $sheet->getStyle($colIndex . $currentRow)->getAlignment()->setHorizontal('left'); $colIndex++;
-            $no++;
+            $no--;
             $currentRow++;
         }
         $lastDataRow = $currentRow - 1;
