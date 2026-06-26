@@ -63,7 +63,7 @@
     <script src="{{ asset('assets/js/config.js') }}"></script>
 
     @yield('style')
-  
+
     <!-- Dynamic Favicon -->
     <script src="/iseki_pro_app/js/dynamic-favicon.js"></script>
     <script>document.addEventListener("DOMContentLoaded", function() { setDynamicFavicon("verified_user", "Digital Pokayoke"); });</script>
@@ -188,6 +188,12 @@
                   </a>
                 </li>
               </ul>
+            </li>
+            <li class="menu-item {{ $page === 'wa-rangkuman' ? 'active' : '' }}">
+              <a href="{{ route('report.wa-rangkuman') }}" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-message-square-detail"></i>
+                <div data-i18n="WA Rangkuman">WA Rangkuman</div>
+              </a>
             </li>
             <li class="menu-item {{ $page === 'plan' ? 'active' : '' }}">
               <a href="{{ route('plan') }}" class="menu-link">
@@ -349,7 +355,7 @@
     <!-- endbuild -->
 
     <!-- Vendors JS -->
-    
+
     <!-- Main JS -->
     <script src="{{ asset('assets/js/main.js') }}"></script>
 

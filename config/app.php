@@ -123,4 +123,17 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | WA Rangkuman Group ID
+    |--------------------------------------------------------------------------
+    |
+    | Group ID WhatsApp tujuan untuk WA Rangkuman otomatis.
+    | Format: 120363045467407165@g.us (group) atau 628xxx (personal).
+    | Kosongkan jika belum ingin mengirim otomatis ke WaQueue.
+    |
+    */
+
+    'wa_rangkuman_group_id' => env('WA_RANGKUMAN_GROUP_ID', '6285731734385-1591868928@g.us'),
+
 ];

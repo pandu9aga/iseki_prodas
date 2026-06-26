@@ -1336,4 +1336,5 @@ class ReportController extends Controller
             })
             ->make(true);
     }
+
 }

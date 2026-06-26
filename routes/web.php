@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\PlanController;
 use App\Http\Controllers\Admin\RuleController;
 use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\WaRangkumanController;
 use App\Http\Controllers\Area\AreaController;
 
 Route::get('/', [MainController::class, 'index'])->name('/');
@@ -69,6 +70,22 @@ Route::middleware(AdminMiddleware::class)->group(function () {
 
     Route::get('/report/daisha', [ReportController::class, 'daishaReport'])->name('report.daisha');
     Route::get('/api/admin/daisha/reports-data', [ReportController::class, 'getDaishaReports'])->name('api.admin.daisha.reports.data');
+
+    // ── WA Rangkuman ──
+    Route::get('/report/wa-rangkuman', [WaRangkumanController::class, 'index'])->name('report.wa-rangkuman')->middleware(\App\Http\Middleware\WaRangkumanAutoMiddleware::class);
+    Route::get('/api/admin/wa-rangkuman-data', [WaRangkumanController::class, 'getData'])->name('api.admin.wa-rangkuman.data');
+
+    Route::get('/report/wa-rangkuman/target', [WaRangkumanController::class, 'target'])->name('report.wa-rangkuman.target');
+    Route::post('/report/wa-rangkuman/target/import', [WaRangkumanController::class, 'importTarget'])->name('report.wa-rangkuman.target.import');
+    Route::get('/report/wa-rangkuman/target/export', [WaRangkumanController::class, 'exportTarget'])->name('report.wa-rangkuman.target.export');
+    Route::get('/report/wa-rangkuman/target/template', [WaRangkumanController::class, 'downloadTargetTemplate'])->name('report.wa-rangkuman.target.template');
+
+    Route::post('/api/admin/wa-rangkuman/save-history', [WaRangkumanController::class, 'saveHistory'])->name('api.admin.wa-rangkuman.save-history');
+    Route::get('/api/admin/wa-rangkuman/history', [WaRangkumanController::class, 'getHistory'])->name('api.admin.wa-rangkuman.history');
+    Route::post('/api/admin/wa-rangkuman/koreksi', [WaRangkumanController::class, 'saveKoreksi'])->name('api.admin.wa-rangkuman.koreksi');
+
+    Route::get('/api/admin/wa-rangkuman/harian-data', [WaRangkumanController::class, 'getHarianData'])->name('api.admin.wa-rangkuman.harian-data');
+    Route::get('/api/admin/wa-rangkuman/export-monthly', [WaRangkumanController::class, 'exportMonthly'])->name('api.admin.wa-rangkuman.export-monthly');
 });
 
 Route::middleware(AuthMiddleware::class)->group(function () {
