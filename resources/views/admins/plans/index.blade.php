@@ -157,8 +157,7 @@
                 [1, 'asc']
             ],
             ajax: {
-                url: '{{ url('
-                api / plans - data ') }}',
+                url: '{{ url('api/plans-data') }}',
                 type: 'GET',
                 data: function(d) {
                     // Tambahkan parameter tahun ke request DataTables
@@ -290,8 +289,7 @@
 
             if (confirm("Do you want to delete plan " + planName + "?")) {
                 $.ajax({
-                    url: '{{ url('
-                    plan / delete ') }}/' + planId,
+                    url: '{{ url('plan/delete') }}/' + planId,
                     type: 'POST',
                     data: {
                         _method: 'DELETE',
