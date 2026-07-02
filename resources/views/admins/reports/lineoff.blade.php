@@ -75,7 +75,7 @@
             pageLength: 50,
             order: [[1, 'asc']],
             ajax: {
-                url: '/iseki_podium/public/api/report/lineoffs-data',
+                url: '{{ url('api/report/lineoffs-data') }}',
                 type: 'GET',
                 error: function (xhr, error, code) {
                     console.warn("DataTables AJAX Error:", error, code);

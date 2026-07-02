@@ -76,7 +76,7 @@
             pageLength: 50,
             order: [[1, 'asc']],
             ajax: {
-                url: '/iseki_podium/public/api/report/missings-data',
+                url: '{{ url('api/report/missings-data') }}',
                 type: 'GET',
                 error: function (xhr, error, code) {
                     console.warn("DataTables AJAX Error:", error, code);

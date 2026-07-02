@@ -19,35 +19,34 @@
                     </div>
                     <div class="card-body">
                         <!-- Filter -->
-                        <div class="row mb-4">
-                            <div class="col-md-4">
+                        <div class="row mb-4 g-3">
+                            <div class="col-12 col-md-auto">
                                 <label for="filterDate" class="form-label">Tanggal Produksi</label>
-                                <div class="input-group">
-                                    <input type="date" id="filterDate" class="form-control"
-                                        value="{{ \Carbon\Carbon::today()->toDateString() }}">
+                                <div class="input-group flex-nowrap">
                                     <button type="button" id="prevDateBtn" class="btn btn-outline-secondary">
                                         <i class="bx bx-chevron-left"></i>
+                                    </button>
+                                    <input type="date" id="filterDate" class="form-control text-center"
+                                        value="{{ \Carbon\Carbon::today()->toDateString() }}" style="min-width: 150px;">
+                                    <button type="button" id="nextDateBtn" class="btn btn-outline-secondary">
+                                        <i class="bx bx-chevron-right"></i>
                                     </button>
                                     <button type="button" id="applyFilter" class="btn btn-success">
                                         <i class="bx bx-refresh me-1"></i> Tampilkan
                                     </button>
-                                    <button type="button" id="nextDateBtn" class="btn btn-outline-secondary">
-                                        <i class="bx bx-chevron-right"></i>
-                                    </button>
                                 </div>
                             </div>
-                            <div class="col-md-8 text-end">
-
-                                <button type="button" id="saveHistoryBtn" class="btn btn-primary me-2">
+                            <div class="col-12 col-md d-flex align-items-end justify-content-md-end flex-wrap gap-2">
+                                <button type="button" id="saveHistoryBtn" class="btn btn-primary">
                                     <i class="bx bx-save me-1"></i> Simpan Log
                                 </button>
                                 <button type="button" id="copyWaBtn" class="btn btn-outline-success">
                                     <i class="bx bx-copy me-1"></i> Copy WA
                                 </button>
-                                <button type="button" id="sendWaBtn" class="btn btn-success ms-2">
+                                <button type="button" id="sendWaBtn" class="btn btn-success">
                                     <i class="bx bxl-whatsapp me-1"></i> Kirim WA
                                 </button>
-                                <button type="button" id="historyModalBtn" class="btn btn-outline-warning ms-2">
+                                <button type="button" id="historyModalBtn" class="btn btn-outline-warning">
                                     <i class="bx bx-history me-1"></i> Histori
                                 </button>
                             </div>

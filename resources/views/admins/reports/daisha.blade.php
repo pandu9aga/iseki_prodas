@@ -8,14 +8,18 @@
                     <div class="card-body">
                         <h5 class="card-title text-primary">Daisha Set Report</h5>
                         <form id="filterForm" class="row g-3 align-items-end">
-                            <div class="col-md-3">
+                            <div class="col-12 col-md-auto">
                                 <label for="scan_date" class="form-label">Scan Date</label>
-                                <input type="date" id="scan_date" class="form-control"
-                                    value="{{ \Carbon\Carbon::today()->toDateString() }}">
+                                <div class="input-group flex-nowrap">
+                                    <button type="button" class="btn btn-outline-secondary prev-date-btn"><i class="bx bx-chevron-left"></i></button>
+                                    <input type="date" id="scan_date" class="form-control text-center"
+                                        value="{{ \Carbon\Carbon::today()->toDateString() }}" style="min-width: 150px;">
+                                    <button type="button" class="btn btn-outline-secondary next-date-btn"><i class="bx bx-chevron-right"></i></button>
+                                </div>
                             </div>
-                            <div class="col-md-3">
-                                <button type="button" id="filterBtn" class="btn btn-primary">Filter</button>
-                                <a id="exportBtn" href="#" class="btn btn-success ms-2">
+                            <div class="col-12 col-md-auto d-flex gap-2">
+                                <button type="button" id="filterBtn" class="btn btn-primary w-100">Filter</button>
+                                <a id="exportBtn" href="#" class="btn btn-success w-100">
                                     <i class='bx bx-download'></i> Export
                                 </a>
                             </div>
@@ -223,6 +227,26 @@
             }
 
             updateExportUrl();
+
+            $(document).on('click', '.prev-date-btn', function() {
+                let input = $('#scan_date');
+                if(input.val()) {
+                    let date = new Date(input.val());
+                    date.setDate(date.getDate() - 1);
+                    input.val(date.toISOString().split('T')[0]);
+                    $('#filterBtn').click();
+                }
+            });
+
+            $(document).on('click', '.next-date-btn', function() {
+                let input = $('#scan_date');
+                if(input.val()) {
+                    let date = new Date(input.val());
+                    date.setDate(date.getDate() + 1);
+                    input.val(date.toISOString().split('T')[0]);
+                    $('#filterBtn').click();
+                }
+            });
         });
     </script>
 @endsection

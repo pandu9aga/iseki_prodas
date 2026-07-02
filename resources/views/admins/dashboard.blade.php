@@ -172,7 +172,7 @@
     borderColor = config.colors.borderColor;
 
     document.addEventListener("DOMContentLoaded", function () {
-        fetch("/iseki_podium/public/api/api_dashboard")
+        fetch("{{ url('api/api_dashboard') }}")
             .then(res => res.json())
             .then(data => {
                 // update year & annualCount
@@ -245,7 +245,7 @@
             })
             .catch(err => console.error("Error loading dashboard data:", err));
         
-        fetch("/iseki_podium/public/api/api_dashboard2")
+        fetch("{{ url('api/api_dashboard2') }}")
             .then(res => res.json())
             .then(data => {
                 const totalRevenueChartEl = document.querySelector('#totalRevenueChart');
@@ -316,7 +316,7 @@
             })
             .catch(err => console.error("Error loading plans data:", err));
 
-        fetch("/iseki_podium/public/api/api_dashboard3")
+        fetch("{{ url('api/api_dashboard3') }}")
             .then(response => response.json())
             .then(apiData => {
                 if (apiData.success) {

@@ -12,7 +12,7 @@
                             <a href="{{ route('plan.add') }}" class="btn btn-md btn-outline-primary"><span class="tf-icons bx bx-plus"></span> Add Plan</a>
                             <button type="button" class="btn btn-md btn-outline-info" data-bs-toggle="modal" data-bs-target="#importModal"><span class="tf-icons bx bx-upload"></span> Import Plan</button>
                             @if(session('success'))
-                                <p class="text-success mt-2">{{ session('success') }}</p>
+                            <p class="text-success mt-2">{{ session('success') }}</p>
                             @endif
                         </div>
                     </div>
@@ -39,7 +39,7 @@
                             </div>
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
-                                Cancel
+                                    Cancel
                                 </button>
                                 <button type="submit" class="btn btn-info">Import</button>
                             </div>
@@ -107,162 +107,210 @@
 <script src="{{asset('assets/js/dataTables.fixedColumns.min.js')}}"></script>
 
 <script>
-$(document).ready(function () {
-    // Ambil tahun saat ini
-    const currentYear = new Date().getFullYear();
-    // Tentukan rentang tahun (misalnya, 10 tahun ke belakang dari sekarang)
-    const startYear = 2025;
-    const endYear = currentYear + 1; // Opsional: tambahkan beberapa tahun ke depan
+    $(document).ready(function() {
+        // Ambil tahun saat ini
+        const currentYear = new Date().getFullYear();
+        // Tentukan rentang tahun (misalnya, 10 tahun ke belakang dari sekarang)
+        const startYear = 2025;
+        const endYear = currentYear + 1; // Opsional: tambahkan beberapa tahun ke depan
 
-    // Isi dropdown filter tahun
-    const filterTahunSelect = $('#filterTahun');
-    let optionsHtml = ''; // Gunakan string HTML untuk membangun opsi secara efisien
+        // Isi dropdown filter tahun
+        const filterTahunSelect = $('#filterTahun');
+        let optionsHtml = ''; // Gunakan string HTML untuk membangun opsi secara efisien
 
-    for (let year = endYear; year >= startYear; year--) {
-        const isSelected = year === currentYear ? ' selected' : ''; // Tambahkan atribut 'selected' jika tahun saat ini
-        optionsHtml += `<option value="${year}"${isSelected}>${year}</option>`; // Gunakan template literal
-    }
-
-    filterTahunSelect.html(optionsHtml); // Masukkan semua opsi sekaligus ke dalam select
-
-
-    // clone header row untuk filter
-    $('#plansTable thead tr')
-        .clone(true)
-        .addClass('filters')
-        .appendTo('#plansTable thead');
-
-    // Tambah plugin custom sorting (jika diperlukan)
-    jQuery.extend(jQuery.fn.dataTable.ext.type.order, {
-        "seq-pre": function (d) {
-            let num = d.replace(/^[^\d]*/, "");
-            return parseInt(num, 10) || 0;
-        },
-        "seq-asc": function (a, b) {
-            return a - b;
-        },
-        "seq-desc": function (a, b) {
-            return b - a;
+        for (let year = endYear; year >= startYear; year--) {
+            const isSelected = year === currentYear ? ' selected' : ''; // Tambahkan atribut 'selected' jika tahun saat ini
+            optionsHtml += `<option value="${year}"${isSelected}>${year}</option>`; // Gunakan template literal
         }
+
+        filterTahunSelect.html(optionsHtml); // Masukkan semua opsi sekaligus ke dalam select
+
+
+        // clone header row untuk filter
+        $('#plansTable thead tr')
+            .clone(true)
+            .addClass('filters')
+            .appendTo('#plansTable thead');
+
+        // Tambah plugin custom sorting (jika diperlukan)
+        jQuery.extend(jQuery.fn.dataTable.ext.type.order, {
+            "seq-pre": function(d) {
+                let num = d.replace(/^[^\d]*/, "");
+                return parseInt(num, 10) || 0;
+            },
+            "seq-asc": function(a, b) {
+                return a - b;
+            },
+            "seq-desc": function(a, b) {
+                return b - a;
+            }
+        });
+
+        // Inisialisasi DataTables dengan parameter tambahan
+        var table = $('#plansTable').DataTable({
+            processing: true,
+            serverSide: true,
+            deferRender: true,
+            stateSave: false,
+            pageLength: 50,
+            order: [
+                [1, 'asc']
+            ],
+            ajax: {
+                url: '{{ url('
+                api / plans - data ') }}',
+                type: 'GET',
+                data: function(d) {
+                    // Tambahkan parameter tahun ke request DataTables
+                    d.tahun = $('#filterTahun').val(); // Gunakan nilai dari select
+                },
+                error: function(xhr, error, code) {
+                    console.warn("DataTables AJAX Error:", error, code);
+                }
+            },
+            scrollX: true,
+            scrollY: "500px",
+            scrollCollapse: true,
+            fixedColumns: {
+                leftColumns: 2,
+                rightColumns: 1
+            },
+            orderCellsTop: true,
+            fixedHeader: false,
+            columns: [{
+                    data: 'DT_RowIndex',
+                    name: 'DT_RowIndex',
+                    orderable: false,
+                    searchable: false
+                }, // ✅ Perbaikan
+                {
+                    data: 'Sequence_No_Plan',
+                    name: 'Sequence_No_Plan'
+                }, // ✅ Perbaikan
+                {
+                    data: 'Type_Plan',
+                    name: 'Type_Plan'
+                }, // ✅ Sudah benar
+                {
+                    data: 'Production_Date_Plan',
+                    name: 'Production_Date_Plan'
+                }, // ✅ Perbaikan
+                {
+                    data: 'Model_Name_Plan',
+                    name: 'Model_Name_Plan'
+                }, // ✅ Sudah benar
+                {
+                    data: 'Production_No_Plan',
+                    name: 'Production_No_Plan'
+                }, // ✅ Sudah benar
+                {
+                    data: 'Chasis_No_Plan',
+                    name: 'Chasis_No_Plan'
+                }, // ✅ Sudah benar
+                {
+                    data: 'Model_Label_Plan',
+                    name: 'Model_Label_Plan'
+                }, // ✅ Perbaikan
+                {
+                    data: 'Safety_Frame_Label_Plan',
+                    name: 'Safety_Frame_Label_Plan'
+                }, // ✅ Sudah benar
+                {
+                    data: 'Model_Mower_Plan',
+                    name: 'Model_Mower_Plan'
+                }, // ✅ Sudah benar
+                {
+                    data: 'Mower_No_Plan',
+                    name: 'Mower_No_Plan'
+                }, // ✅ Sudah benar
+                {
+                    data: 'Model_Collector_Plan',
+                    name: 'Model_Collector_Plan'
+                }, // ✅ Perbaikan
+                {
+                    data: 'Collector_No_Plan',
+                    name: 'Collector_No_Plan'
+                }, // ✅ Perbaikan
+                {
+                    data: 'action',
+                    name: 'action',
+                    orderable: false,
+                    searchable: false
+                }, // ✅ Sudah benar
+            ],
+            initComplete: function() {
+                var api = this.api();
+
+                // Buat input di tiap kolom (kecuali No dan Action)
+                api.columns().eq(0).each(function(colIdx) {
+                    var cell = $('.filters th').eq($(api.column(colIdx).header()).index());
+                    var title = $(cell).text();
+
+                    if (title !== "No" && title !== "Action") {
+                        $(cell).html(
+                            '<input type="text" placeholder="Search ' + title + '" ' +
+                            'class="form-control form-control-sm" style="width:100%; padding:2px 4px; font-size:12px;"/>'
+                        );
+                    } else {
+                        $(cell).html('');
+                    }
+
+                    // event handler untuk filter kolom lain
+                    $('input', cell).off().on('keyup change clear', function() {
+                        if (api.column(colIdx).search() !== this.value) {
+                            api.column(colIdx).search(this.value).draw();
+                        }
+                    });
+                });
+            }
+        });
+
+        // Event handler untuk perubahan filter tahun (select)
+        $('#filterTahun').on('change', function() {
+            // Reload DataTables ketika nilai tahun berubah
+            table.ajax.reload(null, false); // false untuk tidak mereset paging
+        });
+
     });
 
-    // Inisialisasi DataTables dengan parameter tambahan
-    var table = $('#plansTable').DataTable({
-        processing: true,
-        serverSide: true,
-        deferRender: true,
-        stateSave: false,
-        pageLength: 50,
-        order: [[1, 'asc']],
-        ajax: {
-            url: '/iseki_podium/public/api/plans-data',
-            type: 'GET',
-            data: function(d) {
-                // Tambahkan parameter tahun ke request DataTables
-                d.tahun = $('#filterTahun').val(); // Gunakan nilai dari select
-            },
-            error: function (xhr, error, code) {
-                console.warn("DataTables AJAX Error:", error, code);
-            }
-        },
-        scrollX: true,
-        scrollY: "500px",
-        scrollCollapse: true,
-        fixedColumns: {
-            leftColumns: 2,
-            rightColumns: 1
-        },
-        orderCellsTop: true,
-        fixedHeader: false,
-        columns: [
-            { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false }, // ✅ Perbaikan
-            { data: 'Sequence_No_Plan', name: 'Sequence_No_Plan' }, // ✅ Perbaikan
-            { data: 'Type_Plan', name: 'Type_Plan' }, // ✅ Sudah benar
-            { data: 'Production_Date_Plan', name: 'Production_Date_Plan' }, // ✅ Perbaikan
-            { data: 'Model_Name_Plan', name: 'Model_Name_Plan' }, // ✅ Sudah benar
-            { data: 'Production_No_Plan', name: 'Production_No_Plan' }, // ✅ Sudah benar
-            { data: 'Chasis_No_Plan', name: 'Chasis_No_Plan' }, // ✅ Sudah benar
-            { data: 'Model_Label_Plan', name: 'Model_Label_Plan' }, // ✅ Perbaikan
-            { data: 'Safety_Frame_Label_Plan', name: 'Safety_Frame_Label_Plan' }, // ✅ Sudah benar
-            { data: 'Model_Mower_Plan', name: 'Model_Mower_Plan' }, // ✅ Sudah benar
-            { data: 'Mower_No_Plan', name: 'Mower_No_Plan' }, // ✅ Sudah benar
-            { data: 'Model_Collector_Plan', name: 'Model_Collector_Plan' }, // ✅ Perbaikan
-            { data: 'Collector_No_Plan', name: 'Collector_No_Plan' }, // ✅ Perbaikan
-            { data: 'action', name: 'action', orderable: false, searchable: false }, // ✅ Sudah benar
-        ],
-        initComplete: function () {
-            var api = this.api();
+    // ... (script untuk modal dan delete event handler lainnya) ...
+    $(document).on('show.bs.modal', '.modal', function() {
+        $(this).appendTo('body');
+    });
 
-            // Buat input di tiap kolom (kecuali No dan Action)
-            api.columns().eq(0).each(function (colIdx) {
-                var cell = $('.filters th').eq($(api.column(colIdx).header()).index());
-                var title = $(cell).text();
+    $(document).ready(function() {
+        // ... (hapus bagian $('#plansTable').on('click', ...) dari sini karena sudah di atas) ...
+    });
 
-                if (title !== "No" && title !== "Action") {
-                    $(cell).html(
-                        '<input type="text" placeholder="Search ' + title + '" ' +
-                        'class="form-control form-control-sm" style="width:100%; padding:2px 4px; font-size:12px;"/>'
-                    );
-                } else {
-                    $(cell).html('');
-                }
+    // Event handler untuk delete (dipindahkan ke bawah agar document ready tidak bertabrakan)
+    $(document).ready(function() {
+        $('#plansTable').on('click', '.delete-btn', function() {
+            var planId = $(this).data('id');
+            var planName = $(this).data('name');
 
-                // event handler untuk filter kolom lain
-                $('input', cell).off().on('keyup change clear', function () {
-                    if (api.column(colIdx).search() !== this.value) {
-                        api.column(colIdx).search(this.value).draw();
+            if (confirm("Do you want to delete plan " + planName + "?")) {
+                $.ajax({
+                    url: '{{ url('
+                    plan / delete ') }}/' + planId,
+                    type: 'POST',
+                    data: {
+                        _method: 'DELETE',
+                        _token: '{{ csrf_token() }}'
+                    },
+                    success: function(res) {
+                        if (res.success) {
+                            $('#plansTable').DataTable().ajax.reload(null, false);
+                            alert(res.message);
+                        } else {
+                            alert('Failed to delete plan');
+                        }
+                    },
+                    error: function(xhr) {
+                        alert('Error: ' + xhr.statusText);
                     }
                 });
-            });
-        }
+            }
+        });
     });
-
-    // Event handler untuk perubahan filter tahun (select)
-    $('#filterTahun').on('change', function() {
-        // Reload DataTables ketika nilai tahun berubah
-        table.ajax.reload(null, false); // false untuk tidak mereset paging
-    });
-
-});
-
-// ... (script untuk modal dan delete event handler lainnya) ...
-$(document).on('show.bs.modal', '.modal', function () {
-    $(this).appendTo('body');
-});
-
-$(document).ready(function () {
-    // ... (hapus bagian $('#plansTable').on('click', ...) dari sini karena sudah di atas) ...
-});
-
-// Event handler untuk delete (dipindahkan ke bawah agar document ready tidak bertabrakan)
-$(document).ready(function () {
-    $('#plansTable').on('click', '.delete-btn', function () {
-        var planId = $(this).data('id');
-        var planName = $(this).data('name');
-
-        if (confirm("Do you want to delete plan " + planName + "?")) {
-            $.ajax({
-                url: '/iseki_podium/public/plan/delete/' + planId,
-                type: 'POST',
-                data: {
-                    _method: 'DELETE',
-                    _token: '{{ csrf_token() }}'
-                },
-                success: function(res) {
-                    if(res.success){
-                        $('#plansTable').DataTable().ajax.reload(null, false);
-                        alert(res.message);
-                    } else {
-                        alert('Failed to delete plan');
-                    }
-                },
-                error: function(xhr) {
-                    alert('Error: ' + xhr.statusText);
-                }
-            });
-        }
-    });
-});
-
 </script>
 @endsection

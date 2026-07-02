@@ -59,20 +59,22 @@
                                         <!-- Kolom Kiri: Filter dan Export -->
                                         <div class="col-md-8">
                                             <div class="row g-3 align-items-end">
-                                                <div class="col-md-8">
+                                                <div class="col-12 col-md-auto">
                                                     <label for="scan_date_{{ $area->Id_Area }}" class="form-label">Scan
                                                         Date</label>
-                                                    <div class="input-group">
+                                                    <div class="input-group flex-nowrap">
+                                                        <button type="button" class="btn btn-outline-secondary prev-date-btn" data-area-id="{{ $area->Id_Area }}"><i class="bx bx-chevron-left"></i></button>
                                                         <input type="date" name="scan_date" id="scan_date_{{ $area->Id_Area }}"
-                                                            class="form-control scan_date_input"
-                                                            data-area-id="{{ $area->Id_Area }}" value="{{ $selectedDate }}">
+                                                            class="form-control scan_date_input text-center"
+                                                            data-area-id="{{ $area->Id_Area }}" value="{{ $selectedDate }}" style="min-width: 150px;">
+                                                        <button type="button" class="btn btn-outline-secondary next-date-btn" data-area-id="{{ $area->Id_Area }}"><i class="bx bx-chevron-right"></i></button>
                                                         <button type="button" class="btn btn-outline-primary apply-date-btn"
                                                             data-area-id="{{ $area->Id_Area }}">
                                                             Apply
                                                         </button>
                                                     </div>
                                                 </div>
-                                                <div class="col-md-4">
+                                                <div class="col-12 col-md-auto">
                                                     <a href="#" class="btn btn-success w-100 export-btn"
                                                         data-area-id="{{ $area->Id_Area }}"
                                                         data-area-name="{{ $area->Name_Area }}">
@@ -339,19 +341,21 @@
                                     <!-- Kolom Kiri: Filter dan Export -->
                                     <div class="col-md-8">
                                         <div class="row g-3 align-items-end">
-                                            <div class="col-md-8">
+                                            <div class="col-12 col-md-auto">
                                                 <label for="scan_date_999" class="form-label">Scan Date</label>
-                                                <div class="input-group">
+                                                <div class="input-group flex-nowrap">
+                                                    <button type="button" class="btn btn-outline-secondary prev-date-btn" data-area-id="999"><i class="bx bx-chevron-left"></i></button>
                                                     <input type="date" name="scan_date" id="scan_date_999"
-                                                        class="form-control scan_date_input" data-area-id="999"
-                                                        value="{{ $selectedDate }}">
+                                                        class="form-control scan_date_input text-center" data-area-id="999"
+                                                        value="{{ $selectedDate }}" style="min-width: 150px;">
+                                                    <button type="button" class="btn btn-outline-secondary next-date-btn" data-area-id="999"><i class="bx bx-chevron-right"></i></button>
                                                     <button type="button" class="btn btn-outline-primary apply-date-btn"
                                                         data-area-id="999">
                                                         Apply
                                                     </button>
                                                 </div>
                                             </div>
-                                            <div class="col-md-4">
+                                            <div class="col-12 col-md-auto">
                                                 <a href="#" class="btn btn-success w-100 export-btn" data-area-id="999"
                                                     data-area-name="DAIICHI">
                                                     <i class='bx bx-file'></i> Export Excel
@@ -451,20 +455,22 @@
                                         <div class="card">
                                             <div class="card-body">
                                                 <div class="row g-3 align-items-end">
-                                                    <div class="col-md-6">
+                                                    <div class="col-12 col-md-auto">
                                                         <label for="production_date_all" class="form-label">Production
                                                             Date</label>
-                                                        <div class="input-group">
+                                                        <div class="input-group flex-nowrap">
+                                                            <button type="button" class="btn btn-outline-secondary prev-date-all"><i class="bx bx-chevron-left"></i></button>
                                                             <input type="date" name="production_date"
-                                                                id="production_date_all" class="form-control"
-                                                                value="{{ Carbon\Carbon::today()->toDateString() }}">
+                                                                id="production_date_all" class="form-control text-center"
+                                                                value="{{ Carbon\Carbon::today()->toDateString() }}" style="min-width: 150px;">
+                                                            <button type="button" class="btn btn-outline-secondary next-date-all"><i class="bx bx-chevron-right"></i></button>
                                                             <button type="button" class="btn btn-outline-primary"
                                                                 id="apply-date-all">
                                                                 Apply
                                                             </button>
                                                         </div>
                                                     </div>
-                                                    <div class="col-md-3">
+                                                    <div class="col-12 col-md-auto">
                                                         <a href="#" class="btn btn-success w-100" id="export-all-btn">
                                                             <i class='bx bx-file'></i> Export Excel
                                                         </a>
@@ -852,6 +858,48 @@
                 e.preventDefault();
                 var prodDate = $('#production_date_all').val();
                 window.location.href = "{{ route('admin.area.all.report.export') }}?production_date=" + prodDate;
+            });
+            
+            $(document).on('click', '.prev-date-btn', function() {
+                let areaId = $(this).data('area-id');
+                let input = $('#scan_date_' + areaId);
+                if(input.val()) {
+                    let date = new Date(input.val());
+                    date.setDate(date.getDate() - 1);
+                    input.val(date.toISOString().split('T')[0]);
+                    $('.apply-date-btn[data-area-id="' + areaId + '"]').click();
+                }
+            });
+            
+            $(document).on('click', '.next-date-btn', function() {
+                let areaId = $(this).data('area-id');
+                let input = $('#scan_date_' + areaId);
+                if(input.val()) {
+                    let date = new Date(input.val());
+                    date.setDate(date.getDate() + 1);
+                    input.val(date.toISOString().split('T')[0]);
+                    $('.apply-date-btn[data-area-id="' + areaId + '"]').click();
+                }
+            });
+
+            $(document).on('click', '.prev-date-all', function() {
+                let input = $('#production_date_all');
+                if(input.val()) {
+                    let date = new Date(input.val());
+                    date.setDate(date.getDate() - 1);
+                    input.val(date.toISOString().split('T')[0]);
+                    $('#apply-date-all').click();
+                }
+            });
+            
+            $(document).on('click', '.next-date-all', function() {
+                let input = $('#production_date_all');
+                if(input.val()) {
+                    let date = new Date(input.val());
+                    date.setDate(date.getDate() + 1);
+                    input.val(date.toISOString().split('T')[0]);
+                    $('#apply-date-all').click();
+                }
             });
         });
     </script>

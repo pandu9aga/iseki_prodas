@@ -141,7 +141,7 @@ $(document).ready(function () {
         ],
         order: [[1, 'asc']],
         ajax: {
-            url: '/iseki_podium/public/api/rules-data',
+            url: '{{ url('api/rules-data') }}',
             type: 'GET',
             error: function (xhr, error, code) {
                 console.warn("DataTables AJAX Error:", error, code);
@@ -217,7 +217,7 @@ $(document).ready(function () {
 
         if (confirm("Do you want to delete rule " + ruleName + "?")) {
             $.ajax({
-                url: '/iseki_podium/public/rule/delete/' + ruleId,
+                url: '{{ url('rule/delete') }}/' + ruleId,
                 type: 'POST',
                 data: {
                     _method: 'DELETE',
