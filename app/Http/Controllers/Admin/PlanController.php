@@ -306,9 +306,20 @@ class PlanController extends Controller
         }
 
         if (!$previousProcessesDone) {
+            $missingStr = implode(', ', $missingPrevious);
+
+            DB::connection('mysql')->table('ng_processes')->insert([
+                'app_name' => 'iseki_podium',
+                'sequence_no' => $formattedSequenceNo,
+                'current_process' => $processName,
+                'missing_process' => $missingStr,
+                'message' => "Proses sebelumnya belum selesai: " . $missingStr,
+                'created_at' => Carbon::now(),
+            ]);
+
             return response()->json([
                 'success' => false,
-                'message' => "Proses sebelumnya belum selesai: " . implode(', ', $missingPrevious)
+                'message' => "Proses sebelumnya belum selesai: " . $missingStr
             ], 400);
         }
 

@@ -213,6 +213,12 @@
                 <div data-i18n="User">User</div>
               </a>
             </li>
+            <li class="menu-item {{ $page === 'ng-processes' ? 'active' : '' }}">
+              <a href="{{ route('ng_processes') }}" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-error-circle"></i>
+                <div data-i18n="NG Processes">NG Processes</div>
+              </a>
+            </li>
           </ul>
         </aside>
         <!-- / Menu -->

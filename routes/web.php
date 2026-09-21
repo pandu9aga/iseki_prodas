@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\PlanController;
 use App\Http\Controllers\Admin\RuleController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\WaRangkumanController;
+use App\Http\Controllers\Admin\NgProcessController;
 use App\Http\Controllers\Area\AreaController;
 
 Route::get('/', [MainController::class, 'index'])->name('/');
@@ -86,6 +87,10 @@ Route::middleware(AdminMiddleware::class)->group(function () {
 
     Route::get('/api/admin/wa-rangkuman/harian-data', [WaRangkumanController::class, 'getHarianData'])->name('api.admin.wa-rangkuman.harian-data');
     Route::get('/api/admin/wa-rangkuman/export-monthly', [WaRangkumanController::class, 'exportMonthly'])->name('api.admin.wa-rangkuman.export-monthly');
+
+    // ── NG Processes ──
+    Route::get('/ng-processes', [NgProcessController::class, 'index'])->name('ng_processes');
+    Route::get('/api/admin/ng-processes-data', [NgProcessController::class, 'getData'])->name('api.admin.ng_processes.data');
 });
 
 Route::middleware(AuthMiddleware::class)->group(function () {
