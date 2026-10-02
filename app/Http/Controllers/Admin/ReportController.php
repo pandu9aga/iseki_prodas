@@ -73,6 +73,16 @@ class ReportController extends Controller
                     $record = is_array($decoded) ? $decoded : [];
                 }
 
+                // Filter parcom_shaft_gc berdasarkan sequence dan production date
+                $key = array_search('parcom_shaft_gc', $rules);
+                if ($key !== false) {
+                    $seqNo = intval(preg_replace('/[^0-9]/', '', $row->Sequence_No_Plan));
+                    $prodDate = intval($row->Production_Date_Plan);
+                    if ($prodDate < 20261030 || $seqNo < 7541) {
+                        unset($rules[$key]);
+                    }
+                }
+
                 // Urutkan rules numerik
                 ksort($rules, SORT_NUMERIC);
 
@@ -182,6 +192,16 @@ class ReportController extends Controller
                     $record = is_array($decoded) ? $decoded : [];
                 }
 
+                // Filter parcom_shaft_gc berdasarkan sequence dan production date
+                $key = array_search('parcom_shaft_gc', $rules);
+                if ($key !== false) {
+                    $seqNo = intval(preg_replace('/[^0-9]/', '', $row->Sequence_No_Plan));
+                    $prodDate = intval($row->Production_Date_Plan);
+                    if ($prodDate < 20261030 || $seqNo < 7541) {
+                        unset($rules[$key]);
+                    }
+                }
+
                 ksort($rules, SORT_NUMERIC);
                 $processHtml = '<ul class="list-unstyled mb-0">';
                 if (empty($rules)) {
@@ -272,6 +292,16 @@ class ReportController extends Controller
                 if (!empty($row->Record_Plan)) {
                     $decoded = json_decode(htmlspecialchars_decode($row->Record_Plan), true);
                     $record = is_array($decoded) ? $decoded : [];
+                }
+
+                // Filter parcom_shaft_gc berdasarkan sequence dan production date
+                $key = array_search('parcom_shaft_gc', $rules);
+                if ($key !== false) {
+                    $seqNo = intval(preg_replace('/[^0-9]/', '', $row->Sequence_No_Plan));
+                    $prodDate = intval($row->Production_Date_Plan);
+                    if ($prodDate < 20261030 || $seqNo < 7541) {
+                        unset($rules[$key]);
+                    }
                 }
 
                 // Urutkan rules numerik

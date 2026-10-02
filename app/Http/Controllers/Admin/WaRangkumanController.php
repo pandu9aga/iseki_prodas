@@ -269,6 +269,75 @@ class WaRangkumanController extends Controller
     }
 
     // ══════════════════════════════════════════════
+    //  QUEUE (dipakai WaRangkumanAutoMiddleware & endpoint API manual)
+    // ══════════════════════════════════════════════
+
+    public function generateQueue(Request $request)
+    {
+        $date = $request->input('date', Carbon::today()->toDateString());
+        $result = $this->queueForDate($date);
+
+        return response()->json($result, $result['status'] === 'success' ? 200 : 422);
+    }
+
+    public function queueForDate(string $date): array
+    {
+        $dataResponse = $this->getData(new Request(['date' => $date]));
+        $data = json_decode($dataResponse->getContent(), true);
+
+        if (!$data || empty($data['rows'])) {
+            return ['status' => 'failed', 'message' => 'No data available for this date'];
+        }
+
+        $groupId = config('app.wa_rangkuman_group_id');
+        if (empty($groupId)) {
+            return ['status' => 'failed', 'message' => 'WA Rangkuman group id is not configured'];
+        }
+
+        $queue = WaQueue::create([
+            'message' => $this->buildWaMessage($data['rows'], Carbon::parse($date)),
+            'group_id' => $groupId,
+            'status' => 'pending',
+        ]);
+
+        return [
+            'status' => 'success',
+            'message' => 'Rangkuman queued to WhatsApp',
+            'queue_id' => $queue->id,
+            'date' => $date,
+        ];
+    }
+
+    private function buildWaMessage(array $rows, Carbon $date): string
+    {
+        $lines = [];
+        $formatted = $date->locale('id')->isoFormat('D MMMM YYYY');
+        $lines[] = '═══════════════════════════════';
+        $lines[] = '  *WA RANGKUMAN PRODUKSI*';
+        $lines[] = '  ' . strtoupper($formatted);
+        $lines[] = '═══════════════════════════════';
+        $lines[] = '';
+
+        foreach ($rows as $group) {
+            $lines[] = '*' . $group['group'] . '*';
+            foreach ($group['items'] as $item) {
+                $t = (int)($item['T'] ?? 0);
+                $a = (int)($item['A'] ?? 0);
+                $s = (int)($item['S'] ?? 0);
+                $gt = (int)($item['GT'] ?? 0);
+                $lines[] = '  ' . $item['label'] . ':';
+                $lines[] = '    T = ' . $t . '   A = ' . $a . '   S = ' . $s . '   GT = ' . $gt;
+            }
+            $lines[] = '';
+        }
+
+        $lines[] = '_Update: ' . now()->format('d/m/Y H:i:s') . '_';
+        $lines[] = '═══════════════════════════════';
+
+        return implode("\n", $lines);
+    }
+
+    // ══════════════════════════════════════════════
     //  TARGET MANAGEMENT
     // ══════════════════════════════════════════════
 

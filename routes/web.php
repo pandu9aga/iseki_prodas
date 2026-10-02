@@ -29,6 +29,7 @@ Route::get('/api/lineoff-data', [MainController::class, 'getLineoff'])->name('ap
 Route::get('/report', [MainController::class, 'report'])->name('report');
 Route::get('/report/export', [MainController::class, 'exportReport'])->name('report.export');
 Route::get('/api/reports-data', [MainController::class, 'getReports'])->name('api.reports.data');
+Route::get('/api/admin/wa-rangkuman/generate-queue', [WaRangkumanController::class, 'generateQueue'])->name('api.admin.wa-rangkuman.generate-queue');
 
 Route::middleware(AdminMiddleware::class)->group(function () {
 // Route::middleware('auth')->group(function () {
