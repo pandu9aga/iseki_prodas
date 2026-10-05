@@ -89,7 +89,8 @@ class RuleController extends Controller
             'astra_mower_collector',
             'astra_mower_collector_end',
             'oiler',
-            'parcom_joint_universal'
+            'parcom_joint_universal',
+            'parcom_shaft_gc'
         ];
 
         if ($ruleRule) {
@@ -165,7 +166,8 @@ class RuleController extends Controller
             'astra_mower_collector',
             'astra_mower_collector_end',
             'oiler',
-            'parcom_joint_universal'
+            'parcom_joint_universal',
+            'parcom_shaft_gc'
         ];
 
         // Proses Rule_Rule

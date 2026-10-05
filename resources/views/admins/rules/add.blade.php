@@ -99,6 +99,12 @@
                                             <label class="form-check-label"
                                                 for="parcom_joint_universal">parcom_joint_universal</label>
                                         </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input rule-checkbox" type="checkbox"
+                                                value="parcom_shaft_gc" id="parcom_shaft_gc">
+                                            <label class="form-check-label"
+                                                for="parcom_shaft_gc">parcom_shaft_gc</label>
+                                        </div>
                                     </div>
 
                                     <!-- Area urutan (hanya untuk yang dipilih) -->
