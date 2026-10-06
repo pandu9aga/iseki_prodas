@@ -592,7 +592,7 @@ class ReportController extends Controller
                 $scan = Efficiency_Scan::where(
                     DB::connection('efficiency')->raw('LPAD(Sequence_No_Plan, 5, "0")'),
                     '=',
-                    str_pad($plan->Sequence_No_Plan, 5, '0', STR_PAD_LEFT)
+                    ((strpos(strtoupper($plan->Sequence_No_Plan), 'T') !== false || strpos(strtoupper($plan->Sequence_No_Plan), 'MP') !== false) ? $plan->Sequence_No_Plan : str_pad($plan->Sequence_No_Plan, 5, '0', STR_PAD_LEFT))
                 )
                 ->where('Production_Date_Plan', $plan->Production_Date_Plan)
                 ->where('Id_Area', $areaId)

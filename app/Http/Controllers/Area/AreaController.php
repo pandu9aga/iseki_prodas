@@ -271,7 +271,7 @@ class AreaController extends Controller
             $scan = Efficiency_Scan::where(
                 DB::connection('efficiency')->raw('LPAD(Sequence_No_Plan, 5, "0")'),
                 '=',
-                str_pad($plan->Sequence_No_Plan, 5, '0', STR_PAD_LEFT)
+                ((strpos(strtoupper($plan->Sequence_No_Plan), 'T') !== false || strpos(strtoupper($plan->Sequence_No_Plan), 'MP') !== false) ? $plan->Sequence_No_Plan : str_pad($plan->Sequence_No_Plan, 5, '0', STR_PAD_LEFT))
             )
                 ->where('Production_Date_Plan', $plan->Production_Date_Plan)
                 ->where('Id_Area', session('Id_Area'))
@@ -306,7 +306,7 @@ class AreaController extends Controller
         }
 
         $sequenceNoFormatted = (stripos($sequenceNo, 'T') === false)
-            ? str_pad($sequenceNo, 5, '0', STR_PAD_LEFT)
+            ? ((strpos(strtoupper($sequenceNo), 'T') !== false || strpos(strtoupper($sequenceNo), 'MP') !== false) ? $sequenceNo : str_pad($sequenceNo, 5, '0', STR_PAD_LEFT))
             : $sequenceNo;
         $timestampNow = Carbon::now();
 
@@ -422,7 +422,7 @@ class AreaController extends Controller
         }
 
         // Format sequence_no ke 5 digit dengan leading zero (jika belum oleh JS)
-        $sequenceNoFormatted = str_pad($sequenceNo, 5, '0', STR_PAD_LEFT);
+        $sequenceNoFormatted = (strpos(strtoupper($sequenceNo), 'T') !== false || strpos(strtoupper($sequenceNo), 'MP') !== false) ? $sequenceNo : str_pad($sequenceNo, 5, '0', STR_PAD_LEFT);
 
         $timestampNow = Carbon::now();
 
@@ -1125,7 +1125,7 @@ class AreaController extends Controller
             // Format sequence_no: jika tidak mengandung huruf T, pad ke 5 digit
             $sequenceNo = $request->sequence_no;
             $sequenceNoFormatted = (stripos($sequenceNo, 'T') === false)
-                ? str_pad($sequenceNo, 5, '0', STR_PAD_LEFT)
+                ? ((strpos(strtoupper($sequenceNo), 'T') !== false || strpos(strtoupper($sequenceNo), 'MP') !== false) ? $sequenceNo : str_pad($sequenceNo, 5, '0', STR_PAD_LEFT))
                 : $sequenceNo;
 
             $plan = Plan::where('Sequence_No_Plan', $sequenceNoFormatted)
@@ -1187,7 +1187,7 @@ class AreaController extends Controller
 
         // Format sequence_no: jika tidak mengandung huruf T, pad ke 5 digit
         $sequenceNoFormatted = (stripos($sequenceNo, 'T') === false)
-            ? str_pad($sequenceNo, 5, '0', STR_PAD_LEFT)
+            ? ((strpos(strtoupper($sequenceNo), 'T') !== false || strpos(strtoupper($sequenceNo), 'MP') !== false) ? $sequenceNo : str_pad($sequenceNo, 5, '0', STR_PAD_LEFT))
             : $sequenceNo;
 
         $timestampNow = Carbon::now();
@@ -1521,7 +1521,7 @@ class AreaController extends Controller
         $remark = $request->input('remark');
         $isStay = $request->input('is_stay', false);
 
-        $sequenceNoFormatted = str_pad($sequenceNo, 5, '0', STR_PAD_LEFT);
+        $sequenceNoFormatted = (strpos(strtoupper($sequenceNo), 'T') !== false || strpos(strtoupper($sequenceNo), 'MP') !== false) ? $sequenceNo : str_pad($sequenceNo, 5, '0', STR_PAD_LEFT);
         $timestampNow = Carbon::now();
 
         try {

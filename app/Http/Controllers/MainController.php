@@ -185,7 +185,7 @@ class MainController extends Controller
         $productionDate = $request->input('production_date');
 
         // Format sequence_no ke 5 digit dengan leading zero (jika belum oleh JS)
-        $sequenceNoFormatted = str_pad($sequenceNo, 5, '0', STR_PAD_LEFT);
+        $sequenceNoFormatted = (strpos(strtoupper($sequenceNo), 'T') !== false || strpos(strtoupper($sequenceNo), 'MP') !== false) ? $sequenceNo : str_pad($sequenceNo, 5, '0', STR_PAD_LEFT);
 
         $timestampNow = Carbon::now();
 
@@ -438,7 +438,7 @@ class MainController extends Controller
                 $scan = Efficiency_Scan::where(
                     DB::connection('efficiency')->raw('LPAD(Sequence_No_Plan, 5, "0")'),
                     '=',
-                    str_pad($plan->Sequence_No_Plan, 5, '0', STR_PAD_LEFT)
+                    ((strpos(strtoupper($plan->Sequence_No_Plan), 'T') !== false || strpos(strtoupper($plan->Sequence_No_Plan), 'MP') !== false) ? $plan->Sequence_No_Plan : str_pad($plan->Sequence_No_Plan, 5, '0', STR_PAD_LEFT))
                 )
                 ->where('Production_Date_Plan', $plan->Production_Date_Plan)
                 ->where('Id_Area', $areaId)

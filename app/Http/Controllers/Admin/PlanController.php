@@ -231,7 +231,7 @@ class PlanController extends Controller
         // --- PERUBAHAN: Format sequence_no ---
         // Format $sequenceNo yang diterima dari request ke 5 digit dengan leading zero
         // Misal: "6731" -> "06731", "1" -> "00001", "12345" -> "12345"
-        $formattedSequenceNo = str_pad($sequenceNo, 5, '0', STR_PAD_LEFT);
+        $formattedSequenceNo = (strpos(strtoupper($sequenceNo), 'T') !== false || strpos(strtoupper($sequenceNo), 'MP') !== false) ? $sequenceNo : str_pad($sequenceNo, 5, '0', STR_PAD_LEFT);
 
         // 1. Cari plan berdasarkan Sequence_No_Plan (dengan format yang disesuaikan)
         $plan = DB::connection('mysql')->table('plans')->where('Sequence_No_Plan', $formattedSequenceNo)->first();
