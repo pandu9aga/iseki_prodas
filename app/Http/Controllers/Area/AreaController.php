@@ -339,8 +339,13 @@ class AreaController extends Controller
                 }
 
                 if (empty($modelsToScan)) {
-                    return redirect()->back()->with('error',
-                        'Tidak ada Model Mower atau Model Collector untuk sequence ini.');
+                    $isSXG2 = stripos($plan->Model_Name_Plan, 'SXG2') !== false;
+                    if ($idArea == 1 && $isSXG2) {
+                        $modelsToScan[] = $plan->Model_Name_Plan;
+                    } else {
+                        return redirect()->back()->with('error',
+                            'Tidak ada Model Mower atau Model Collector untuk sequence ini.');
+                    }
                 }
             }
 

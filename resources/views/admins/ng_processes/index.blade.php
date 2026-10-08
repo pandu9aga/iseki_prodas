@@ -57,6 +57,7 @@
                                             <th class="text-primary" style="width: 50px;">No</th>
                                             <th class="text-primary">Aplikasi</th>
                                             <th class="text-primary">Sequence No</th>
+                                            <th class="text-primary">Type</th>
                                             <th class="text-primary">Proses Saat Ini</th>
                                             <th class="text-danger">Proses Sebelumnya Yang Belum Selesai (Akun/Area Salah)</th>
                                             <th class="text-primary">Pesan Error</th>
@@ -118,6 +119,13 @@
                     name: 'sequence_no',
                     render: function (data) {
                         return '<strong>' + (data || '-') + '</strong>';
+                    }
+                },
+                { 
+                    data: 'type_plan', 
+                    name: 'type_plan',
+                    render: function (data) {
+                        return '<span class="badge bg-label-secondary">' + (data || '-') + '</span>';
                     }
                 },
                 { data: 'current_process', name: 'current_process' },

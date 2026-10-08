@@ -9,8 +9,8 @@ class NgProcessController extends Controller
 {
     public function index()
     {
-        $page = "ng-processes";
-        $sub = "ng-processes";
+        $page = 'ng-processes';
+        $sub = 'ng-processes';
 
         $Id_User = session('Id_User');
         $user = \App\Models\User::find($Id_User);
@@ -21,12 +21,18 @@ class NgProcessController extends Controller
     public function getData(Request $request)
     {
         $query = \App\Models\NgProcess::query()
+            ->select('ng_processes.*')
+            ->addSelect(['type_plan' => \App\Models\Plan::select('Type_Plan')
+                ->whereColumn('Sequence_No_Plan', 'ng_processes.sequence_no')
+                ->orderBy('Production_Date_Plan', 'desc')
+                ->limit(1),
+            ])
             ->orderBy('id', 'desc');
 
         if ($request->filled('start_date') && $request->filled('end_date')) {
             $query->whereBetween('created_at', [
-                $request->start_date . ' 00:00:00',
-                $request->end_date . ' 23:59:59'
+                $request->start_date.' 00:00:00',
+                $request->end_date.' 23:59:59',
             ]);
         }
 
